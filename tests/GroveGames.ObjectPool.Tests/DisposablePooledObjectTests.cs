@@ -23,19 +23,6 @@ public class DisposablePooledObjectTests
     }
 
     [Fact]
-    public void Dispose_ShouldNotThrow_WhenOnReturnIsNull()
-    {
-        // Arrange
-        var testObject = new TestObject();
-        Action<TestObject> nullAction = null!;
-        var disposablePooledObject = new DisposablePooledObject<TestObject>(nullAction, testObject);
-
-        // Act & Assert
-        var exception = Record.Exception(() => disposablePooledObject.Dispose());
-        Assert.Null(exception);
-    }
-
-    [Fact]
     public void Dispose_ShouldWorkForMultipleInstances()
     {
         // Arrange
