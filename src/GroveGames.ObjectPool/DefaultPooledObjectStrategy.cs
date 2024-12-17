@@ -7,6 +7,10 @@ public sealed class DefaultPooledObjectStrategy<T> : IPooledObjectStrategy<T> wh
         return new T();
     }
 
+    public void Get(T pooledObject)
+    {
+    }
+
     public void Return(T pooledObject)
     {
     }

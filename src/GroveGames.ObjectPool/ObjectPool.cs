@@ -37,7 +37,9 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class, new()
 
     public T Get()
     {
-        return GetOrCreate();
+        var pooledObject = GetOrCreate();
+        _pooledObjectStrategy.Get(pooledObject);
+        return pooledObject;
     }
 
     public IDisposable Get(out T pooledObject)
