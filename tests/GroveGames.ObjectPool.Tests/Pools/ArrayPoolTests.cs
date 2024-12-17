@@ -12,7 +12,7 @@ public class ArrayPoolTests
         var arrayPool = new ArrayPool<int>(defaultSize);
 
         // Act
-        var array = arrayPool.Get();
+        var array = arrayPool.Get(defaultSize);
 
         // Assert
         Assert.NotNull(array);
@@ -43,9 +43,9 @@ public class ArrayPoolTests
         var arrayPool = new ArrayPool<int>(defaultSize);
 
         // Act
-        var array1 = arrayPool.Get();
+        var array1 = arrayPool.Get(defaultSize);
         arrayPool.Return(array1);
-        var array2 = arrayPool.Get();
+        var array2 = arrayPool.Get(defaultSize);
 
         // Assert
         Assert.Same(array1, array2);
@@ -60,14 +60,14 @@ public class ArrayPoolTests
 
         // Act
         int[] array;
-        using (arrayPool.Get(out array))
+        using (arrayPool.Get(defaultSize, out array))
         {
             // Assert
             Assert.NotNull(array);
             Assert.Equal(defaultSize, array.Length);
         }
 
-        using (arrayPool.Get(out int[] reusedArray))
+        using (arrayPool.Get(defaultSize, out int[] reusedArray))
         {
             Assert.Same(array, reusedArray);
         }
@@ -83,13 +83,13 @@ public class ArrayPoolTests
 
         // Act
         int[] largeArray;
-        using (arrayPool.Get(out largeArray, requestedSize))
+        using (arrayPool.Get(requestedSize, out largeArray))
         {
             Assert.NotNull(largeArray);
             Assert.True(largeArray.Length >= requestedSize);
         }
 
-        using (arrayPool.Get(out int[] defaultArray))
+        using (arrayPool.Get(defaultSize, out int[] defaultArray))
         {
             Assert.Same(largeArray, defaultArray);
             Assert.Equal(requestedSize, defaultArray.Length);
@@ -105,12 +105,12 @@ public class ArrayPoolTests
 
         int[] array1;
 
-        using (arrayPool.Get(out array1))
+        using (arrayPool.Get(defaultSize, out array1))
         {
             array1[0] = 42;
         }
 
-        using (arrayPool.Get(out int[] array2))
+        using (arrayPool.Get(defaultSize, out int[] array2))
         {
             // Assert
             Assert.Same(array1, array2);
