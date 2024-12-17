@@ -52,6 +52,73 @@ public class ArrayPoolTests
     }
 
     [Fact]
+    public void DisposableGet_ShouldReturnArray_WithDefaultSize()
+    {
+        // Arrange
+        int defaultSize = 128;
+        var arrayPool = new ArrayPool<int>(defaultSize);
+
+        // Act
+        int[] array;
+        using (arrayPool.Get(out array))
+        {
+            // Assert
+            Assert.NotNull(array);
+            Assert.Equal(defaultSize, array.Length);
+        }
+
+        using (arrayPool.Get(out int[] reusedArray))
+        {
+            Assert.Same(array, reusedArray);
+        }
+    }
+
+    [Fact]
+    public void DisposableGet_ShouldResizeArray_WhenRequestedSizeIsLarger()
+    {
+        // Arrange
+        int defaultSize = 128;
+        int requestedSize = 256;
+        var arrayPool = new ArrayPool<int>(defaultSize);
+
+        // Act
+        int[] largeArray;
+        using (arrayPool.Get(out largeArray, requestedSize))
+        {
+            Assert.NotNull(largeArray);
+            Assert.True(largeArray.Length >= requestedSize);
+        }
+
+        using (arrayPool.Get(out int[] defaultArray))
+        {
+            Assert.Same(largeArray, defaultArray);
+            Assert.Equal(requestedSize, defaultArray.Length);
+        }
+    }
+
+    [Fact]
+    public void DisposableGet_ShouldReuseArray_WhenReturnedToPool()
+    {
+        // Arrange
+        int defaultSize = 128;
+        var arrayPool = new ArrayPool<int>(defaultSize);
+
+        int[] array1;
+
+        using (arrayPool.Get(out array1))
+        {
+            array1[0] = 42;
+        }
+
+        using (arrayPool.Get(out int[] array2))
+        {
+            // Assert
+            Assert.Same(array1, array2);
+            Assert.Equal(0, array2[0]);
+        }
+    }
+
+    [Fact]
     public void Return_ShouldNotBreak_WhenArrayIsResized()
     {
         // Arrange

@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool.Pools;
 
-public sealed class ArrayPool<T> : IObjectPool<T[]>
+public sealed class ArrayPool<T> : IArrayPool<T>
 {
     private readonly ObjectPool<T[]> _objectPool;
 
@@ -24,6 +24,12 @@ public sealed class ArrayPool<T> : IObjectPool<T[]>
     public T[] Get()
     {
         return _objectPool.Get();
+    }
+
+    public IDisposable Get(out T[] array, int size)
+    {
+        array = Get(size);
+        return new DisposablePooledObject<T[]>(Return, array);
     }
 
     public IDisposable Get(out T[] array)
