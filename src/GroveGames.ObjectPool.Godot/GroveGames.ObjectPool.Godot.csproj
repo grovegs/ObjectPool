@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageTags>$(PackageTags);godot</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GodotSharp" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference
+      Include="../GroveGames.ObjectPool/GroveGames.ObjectPool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="addons/**" />
+    <Compile Remove="addons/**" />
+  </ItemGroup>
+
+</Project>
