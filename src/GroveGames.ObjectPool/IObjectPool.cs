@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public interface IObjectPool<T> : IDisposable
+public interface IObjectPool<T> : IDisposable where T : class
 {
     T Get();
     IDisposable Get(out T pooledObject);

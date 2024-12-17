@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class PooledObjectStrategy<T> : IPooledObjectStrategy<T>
+public sealed class PooledObjectStrategy<T> : IPooledObjectStrategy<T> where T : class
 {
     private readonly Func<T> _create;
     private readonly Action<T> _onGet;

@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public readonly struct DisposablePooledObject<T> : IDisposable
+public readonly struct DisposablePooledObject<T> : IDisposable where T : class
 {
     private readonly Action<T> _onReturn;
     private readonly T _pooledObject;

@@ -1,23 +1,9 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class ObjectPool<T> : IObjectPool<T> where T : class, new()
+public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 {
-    private const int DefaultSize = 8;
-
     private readonly Stack<T> _pool;
     private readonly IPooledObjectStrategy<T> _pooledObjectStrategy;
-
-    public ObjectPool() : this(DefaultSize)
-    {
-    }
-
-    public ObjectPool(int size) : this(size, new DefaultPooledObjectStrategy<T>())
-    {
-    }
-
-    public ObjectPool(IPooledObjectStrategy<T> pooledObjectStrategy) : this(DefaultSize, pooledObjectStrategy)
-    {
-    }
 
     public ObjectPool(int size, IPooledObjectStrategy<T> pooledObjectStrategy)
     {
