@@ -2,17 +2,17 @@ namespace GroveGames.ObjectPool;
 
 public readonly struct DisposablePooledObject<T> : IDisposable
 {
-    private readonly Action<T> _returnAction;
+    private readonly Action<T> _onReturn;
     private readonly T _pooledObject;
 
-    public DisposablePooledObject(Action<T> returnAction, T pooledObject)
+    public DisposablePooledObject(Action<T> onReturn, T pooledObject)
     {
-        _returnAction = returnAction;
+        _onReturn = onReturn;
         _pooledObject = pooledObject;
     }
 
     public void Dispose()
     {
-        _returnAction.Invoke(_pooledObject);
+        _onReturn.Invoke(_pooledObject);
     }
 }
