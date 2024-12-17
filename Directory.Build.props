@@ -9,14 +9,14 @@
 
     <RootNamespace>GroveGames.ObjectPool</RootNamespace>
     <Title>GroveGames.ObjectPool</Title>
-    <Description>Lightweight object pool library</Description>
+    <Description>A high-performance, modular object pooling library for C# supporting .NET and Godot Engine, optimized for minimal memory allocations and improved runtime performance.</Description>
     <Company>Grove Games</Company>
     <Authors>Grove Games</Authors>
     <Copyright>© Grove Games</Copyright>
 
     <PackageId>$(AssemblyName)</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
-    <PackageTags>godot;objectpool;grovegames</PackageTags>
+    <PackageTags>object-pool;godot</PackageTags>
     <PackageProjectUrl>https://github.com/grovegs/ObjectPool</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
