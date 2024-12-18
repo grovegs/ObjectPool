@@ -32,7 +32,8 @@ public class ListPooledObjectStrategyTests
 
         // Assert
         Assert.Equal(3, list.Count);
-        Assert.Equal(new[] { 1, 2, 3 }, list);
+        int[] expected = [1, 2, 3];
+        Assert.Equal(expected, list);
     }
 
     [Fact]
