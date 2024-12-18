@@ -12,7 +12,7 @@ public class ArrayPoolTests
         var arrayPool = new ArrayPool<int>(defaultSize);
 
         // Act
-        var array = arrayPool.Get();
+        var array = arrayPool.Get(defaultSize);
 
         // Assert
         Assert.NotNull(array);
@@ -43,12 +43,79 @@ public class ArrayPoolTests
         var arrayPool = new ArrayPool<int>(defaultSize);
 
         // Act
-        var array1 = arrayPool.Get();
+        var array1 = arrayPool.Get(defaultSize);
         arrayPool.Return(array1);
-        var array2 = arrayPool.Get();
+        var array2 = arrayPool.Get(defaultSize);
 
         // Assert
         Assert.Same(array1, array2);
+    }
+
+    [Fact]
+    public void DisposableGet_ShouldReturnArray_WithDefaultSize()
+    {
+        // Arrange
+        int defaultSize = 128;
+        var arrayPool = new ArrayPool<int>(defaultSize);
+
+        // Act
+        int[] array;
+        using (arrayPool.Get(defaultSize, out array))
+        {
+            // Assert
+            Assert.NotNull(array);
+            Assert.Equal(defaultSize, array.Length);
+        }
+
+        using (arrayPool.Get(defaultSize, out int[] reusedArray))
+        {
+            Assert.Same(array, reusedArray);
+        }
+    }
+
+    [Fact]
+    public void DisposableGet_ShouldResizeArray_WhenRequestedSizeIsLarger()
+    {
+        // Arrange
+        int defaultSize = 128;
+        int requestedSize = 256;
+        var arrayPool = new ArrayPool<int>(defaultSize);
+
+        // Act
+        int[] largeArray;
+        using (arrayPool.Get(requestedSize, out largeArray))
+        {
+            Assert.NotNull(largeArray);
+            Assert.True(largeArray.Length >= requestedSize);
+        }
+
+        using (arrayPool.Get(defaultSize, out int[] defaultArray))
+        {
+            Assert.Same(largeArray, defaultArray);
+            Assert.Equal(requestedSize, defaultArray.Length);
+        }
+    }
+
+    [Fact]
+    public void DisposableGet_ShouldReuseArray_WhenReturnedToPool()
+    {
+        // Arrange
+        int defaultSize = 128;
+        var arrayPool = new ArrayPool<int>(defaultSize);
+
+        int[] array1;
+
+        using (arrayPool.Get(defaultSize, out array1))
+        {
+            array1[0] = 42;
+        }
+
+        using (arrayPool.Get(defaultSize, out int[] array2))
+        {
+            // Assert
+            Assert.Same(array1, array2);
+            Assert.Equal(0, array2[0]);
+        }
     }
 
     [Fact]
