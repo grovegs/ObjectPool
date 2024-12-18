@@ -90,7 +90,7 @@ public class ObjectPoolTests
         // Assert
         var result = pool.Get();
         Assert.Null(result);
-        strategyMock.Verify(s => s.Create(), Times.Once); // Ensure Create() is called again
+        strategyMock.Verify(s => s.Create(), Times.Once);
     }
 
     [Fact]
