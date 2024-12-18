@@ -51,5 +51,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
             disposable.Dispose();
         }
+
+        _pool.Clear();
     }
 }
