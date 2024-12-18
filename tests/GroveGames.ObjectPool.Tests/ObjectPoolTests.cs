@@ -73,4 +73,59 @@ public class ObjectPoolTests
         // Assert
         disposableMock.Verify(d => d.Dispose(), Times.Once);
     }
+
+    [Fact]
+    public void Dispose_ShouldClearPool()
+    {
+        // Arrange
+        var strategyMock = new Mock<IPooledObjectStrategy<TestObject>>();
+        var testObject = new TestObject();
+
+        var pool = new ObjectPool<TestObject>(size: 2, strategyMock.Object);
+        pool.Return(testObject);
+
+        // Act
+        pool.Dispose();
+
+        // Assert
+        var result = pool.Get();
+        Assert.Null(result);
+        strategyMock.Verify(s => s.Create(), Times.Once);
+    }
+
+    [Fact]
+    public void Dispose_ShouldBeSafe_WhenCalledMultipleTimes()
+    {
+        // Arrange
+        var disposableMock = new Mock<IDisposable>();
+        var disposableObject = new DisposableTestObject(disposableMock.Object);
+        var strategyMock = new Mock<IPooledObjectStrategy<DisposableTestObject>>();
+        strategyMock.Setup(s => s.Create()).Returns(disposableObject);
+        var pool = new ObjectPool<DisposableTestObject>(size: 2, strategyMock.Object);
+        pool.Return(disposableObject);
+
+        // Act
+        pool.Dispose();
+        pool.Dispose();
+
+        // Assert
+        disposableMock.Verify(d => d.Dispose(), Times.Once);
+    }
+
+    [Fact]
+    public void Dispose_ShouldHandleNonIDisposableObjectsGracefully()
+    {
+        // Arrange
+        var strategyMock = new Mock<IPooledObjectStrategy<TestObject>>();
+        var testObject = new TestObject();
+        strategyMock.Setup(s => s.Create()).Returns(testObject);
+        var pool = new ObjectPool<TestObject>(size: 2, strategyMock.Object);
+        pool.Return(testObject);
+
+        // Act
+        pool.Dispose();
+
+        // Assert
+        Assert.True(true);
+    }
 }
