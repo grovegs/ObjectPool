@@ -11,7 +11,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     public int Count => _items.Count;
     public int MaxSize => _maxSize;
 
-    public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize, int initialSize, bool prewarmPool)
+    public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize, int initialSize, bool prewarm)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
@@ -23,15 +23,15 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
         _maxSize = maxSize;
         _disposed = false;
 
-        if (prewarmPool && initialSize > 0)
+        if (prewarm && initialSize > 0)
         {
-            PrewarmPool(initialSize);
+            Prewarm(initialSize);
         }
     }
 
     public T Rent()
     {
-        return _items.Count > 0 ? _items.Dequeue() : _factory();
+        return _items.TryDequeue(out T? item) ? item : _factory();
     }
 
     public void Return(T item)
@@ -49,7 +49,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
         }
     }
 
-    private void PrewarmPool(int count)
+    private void Prewarm(int count)
     {
         for (int i = 0; i < count; i++)
         {
@@ -73,10 +73,8 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
         _disposed = true;
 
-        while (_items.Count > 0)
+        while (_items.TryDequeue(out T? item))
         {
-            T item = _items.Dequeue();
-
             if (item is IDisposable disposable)
             {
                 disposable.Dispose();
