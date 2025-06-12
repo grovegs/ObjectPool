@@ -2,56 +2,85 @@ namespace GroveGames.ObjectPool;
 
 public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 {
-    private readonly Stack<T> _pool;
-    private readonly IPooledObjectStrategy<T> _pooledObjectStrategy;
+    private readonly Queue<T> _items;
+    private readonly Func<T> _factory;
+    private readonly Action<T>? _onReturn;
+    private readonly int _maxSize;
+    private bool _disposed;
 
-    public ObjectPool(int size, IPooledObjectStrategy<T> pooledObjectStrategy)
+    public int Count => _items.Count;
+    public int MaxSize => _maxSize;
+
+    public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize, int initialSize, bool prewarmPool)
     {
-        _pool = new Stack<T>(size);
-        _pooledObjectStrategy = pooledObjectStrategy;
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+
+        _items = new Queue<T>(maxSize);
+        _factory = factory;
+        _onReturn = onReturn;
+        _maxSize = maxSize;
+        _disposed = false;
+
+        if (prewarmPool && initialSize > 0)
+        {
+            PrewarmPool(initialSize);
+        }
     }
 
-    private T GetOrCreate()
+    public T Rent()
     {
-        if (!_pool.TryPop(out var pooledObject))
+        return _items.Count > 0 ? _items.Dequeue() : _factory();
+    }
+
+    public void Return(T item)
+    {
+        if (_disposed)
         {
-            pooledObject = _pooledObjectStrategy.Create();
+            return;
         }
 
-        return pooledObject;
+        _onReturn?.Invoke(item);
+
+        if (_items.Count < _maxSize)
+        {
+            _items.Enqueue(item);
+        }
     }
 
-    public T Get()
+    private void PrewarmPool(int count)
     {
-        var pooledObject = GetOrCreate();
-        _pooledObjectStrategy.Get(pooledObject);
-        return pooledObject;
+        for (int i = 0; i < count; i++)
+        {
+            var item = _factory();
+            _onReturn?.Invoke(item);
+            _items.Enqueue(item);
+        }
     }
 
-    public IDisposable Get(out T pooledObject)
+    public void Clear()
     {
-        pooledObject = Get();
-        return new DisposablePooledObject<T>(Return, pooledObject);
-    }
-
-    public void Return(T pooledObject)
-    {
-        _pooledObjectStrategy.Return(pooledObject);
-        _pool.Push(pooledObject);
+        _items.Clear();
     }
 
     public void Dispose()
     {
-        foreach (var item in _pool)
+        if (_disposed)
         {
-            if (item is not IDisposable disposable)
-            {
-                continue;
-            }
-
-            disposable.Dispose();
+            return;
         }
 
-        _pool.Clear();
+        _disposed = true;
+
+        while (_items.Count > 0)
+        {
+            T item = _items.Dequeue();
+
+            if (item is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
     }
 }
