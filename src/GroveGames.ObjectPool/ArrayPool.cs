@@ -1,12 +1,12 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class FixedSizeArrayPool<T> : IArrayPool<T>
+public sealed class ArrayPool<T> : IArrayPool<T>
 {
     private readonly Dictionary<int, Queue<T[]>> _poolsBySize;
     private readonly int _maxSize;
     private bool _disposed;
 
-    public FixedSizeArrayPool(int maxSize)
+    public ArrayPool(int maxSize)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
