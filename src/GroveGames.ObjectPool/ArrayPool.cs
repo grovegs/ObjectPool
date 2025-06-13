@@ -17,6 +17,8 @@ public sealed class ArrayPool<T> : IArrayPool<T>
 
     public T[] Rent(int size)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (size == 0)
         {
             return [];
@@ -32,10 +34,7 @@ public sealed class ArrayPool<T> : IArrayPool<T>
 
     public void Return(T[] array, bool clearArray = false)
     {
-        if (_disposed)
-        {
-            return;
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (clearArray)
         {
@@ -58,16 +57,22 @@ public sealed class ArrayPool<T> : IArrayPool<T>
 
     public int Count(int size)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         return _poolsBySize.TryGetValue(size, out var queue) ? queue.Count : 0;
     }
 
     public int MaxSize(int size)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         return _poolsBySize.ContainsKey(size) || size > 0 ? _maxSize : 0;
     }
 
     public void Clear()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         foreach (var queue in _poolsBySize.Values)
         {
             queue.Clear();
