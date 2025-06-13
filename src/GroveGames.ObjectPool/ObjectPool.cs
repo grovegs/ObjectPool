@@ -8,7 +8,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     private readonly int _maxSize;
     private bool _disposed;
 
-    public int Count => _items.Count;
+    public int Count => _disposed ? 0 : _items.Count;
     public int MaxSize => _maxSize;
 
     public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize)
@@ -25,15 +25,14 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public T Rent()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         return _items.TryDequeue(out T? item) ? item : _factory();
     }
 
     public void Return(T item)
     {
-        if (_disposed)
-        {
-            return;
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _onReturn?.Invoke(item);
 
@@ -45,6 +44,8 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public void Clear()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         _items.Clear();
     }
 
@@ -57,7 +58,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
         _disposed = true;
 
-        while (_items.TryDequeue(out T? item))
+        while (_items.TryDequeue(out var item))
         {
             if (item is IDisposable disposable)
             {
