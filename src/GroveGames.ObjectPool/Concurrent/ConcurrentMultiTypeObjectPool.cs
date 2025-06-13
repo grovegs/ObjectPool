@@ -1,22 +1,13 @@
-using System.Collections.Concurrent;
+using System.Collections.Frozen;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> where TBase : class
 {
-    private readonly ConcurrentDictionary<Type, IObjectPool<TBase>> _poolsByType;
+    private readonly FrozenDictionary<Type, IObjectPool<TBase>> _poolsByType;
     private volatile bool _disposed;
 
-    public ConcurrentMultiTypeObjectPool(IReadOnlyDictionary<Type, IObjectPool<TBase>> poolsByType)
-    {
-        ArgumentNullException.ThrowIfNull(poolsByType);
-        ArgumentOutOfRangeException.ThrowIfZero(poolsByType.Count, nameof(poolsByType));
-
-        _poolsByType = new ConcurrentDictionary<Type, IObjectPool<TBase>>(poolsByType);
-        _disposed = false;
-    }
-
-    public ConcurrentMultiTypeObjectPool(ConcurrentDictionary<Type, IObjectPool<TBase>> poolsByType)
+    public ConcurrentMultiTypeObjectPool(FrozenDictionary<Type, IObjectPool<TBase>> poolsByType)
     {
         ArgumentNullException.ThrowIfNull(poolsByType);
         ArgumentOutOfRangeException.ThrowIfZero(poolsByType.Count, nameof(poolsByType));
@@ -84,7 +75,5 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
         {
             pool.Dispose();
         }
-
-        _poolsByType.Clear();
     }
 }
