@@ -20,6 +20,7 @@ public sealed class ConcurrentListPool<T> : IListPool<T>
     public List<T> Rent()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
         return _pool.Rent();
     }
 
