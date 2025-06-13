@@ -17,6 +17,20 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T>
         _disposed = false;
     }
 
+    public int Count(int size)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        return _poolsBySize.TryGetValue(size, out var queue) ? queue.Count : 0;
+    }
+
+    public int MaxSize(int size)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        return _poolsBySize.ContainsKey(size) || size > 0 ? _maxSize : 0;
+    }
+
     public T[] Rent(int size)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -50,20 +64,6 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T>
         {
             queue.Enqueue(array);
         }
-    }
-
-    public int Count(int size)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        return _poolsBySize.TryGetValue(size, out var queue) ? queue.Count : 0;
-    }
-
-    public int MaxSize(int size)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        return _poolsBySize.ContainsKey(size) || size > 0 ? _maxSize : 0;
     }
 
     public void Clear()

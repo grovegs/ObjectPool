@@ -13,6 +13,22 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
         _poolsByType = poolsByType;
     }
 
+    public int Count<TDerived>() where TDerived : class, TBase
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var type = typeof(TDerived);
+        return _poolsByType.TryGetValue(type, out var pool) ? pool.Count : 0;
+    }
+
+    public int MaxSize<TDerived>() where TDerived : class, TBase
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var type = typeof(TDerived);
+        return _poolsByType.TryGetValue(type, out var pool) ? pool.MaxSize : 0;
+    }
+
     public TBase Rent<TDerived>() where TDerived : class, TBase
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -31,22 +47,6 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
         {
             pool.Return(item);
         }
-    }
-
-    public int Count<TDerived>() where TDerived : class, TBase
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        var type = typeof(TDerived);
-        return _poolsByType.TryGetValue(type, out var pool) ? pool.Count : 0;
-    }
-
-    public int MaxSize<TDerived>() where TDerived : class, TBase
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        var type = typeof(TDerived);
-        return _poolsByType.TryGetValue(type, out var pool) ? pool.MaxSize : 0;
     }
 
     public void Clear()
