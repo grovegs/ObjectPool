@@ -8,10 +8,9 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     private readonly Func<T> _factory;
     private readonly Action<T>? _onReturn;
     private readonly int _maxSize;
-    private volatile int _count;
     private volatile bool _disposed;
 
-    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _count;
+    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _items.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _maxSize;
 
     public ConcurrentObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize)
@@ -23,7 +22,6 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         _factory = factory;
         _onReturn = onReturn;
         _maxSize = maxSize;
-        _count = 0;
         _disposed = false;
     }
 
@@ -33,7 +31,6 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
         if (_items.TryDequeue(out var item))
         {
-            Interlocked.Decrement(ref _count);
             return item;
         }
 
@@ -45,15 +42,10 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _onReturn?.Invoke(item);
-        var count = Interlocked.Increment(ref _count);
 
-        if (count <= _maxSize)
+        if (_items.Count < _maxSize)
         {
             _items.Enqueue(item);
-        }
-        else
-        {
-            Interlocked.Decrement(ref _count);
         }
     }
 
@@ -62,7 +54,6 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _items.Clear();
-        Interlocked.Exchange(ref _count, 0);
     }
 
     public void Dispose()
@@ -74,10 +65,8 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
         _disposed = true;
 
-        while (_items.TryDequeue(out T? item))
+        while (_items.TryDequeue(out var item))
         {
-            Interlocked.Decrement(ref _count);
-
             if (item is IDisposable disposable)
             {
                 disposable.Dispose();
