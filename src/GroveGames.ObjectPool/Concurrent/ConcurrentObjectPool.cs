@@ -45,7 +45,6 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _onReturn?.Invoke(item);
-
         var count = Interlocked.Increment(ref _count);
 
         if (count <= _maxSize)
