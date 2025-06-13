@@ -15,16 +15,15 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
 
     public TBase Rent<TDerived>() where TDerived : class, TBase
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var type = typeof(TDerived);
         return _poolsByType.TryGetValue(type, out var pool) ? pool.Rent() : throw new InvalidOperationException($"Type {typeof(TDerived).Name} is not registered.");
     }
 
     public void Return<TDerived>(TDerived item) where TDerived : class, TBase
     {
-        if (_disposed)
-        {
-            return;
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var type = typeof(TDerived);
 
@@ -36,18 +35,30 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
 
     public int Count<TDerived>() where TDerived : class, TBase
     {
+        if (_disposed)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
+
         var type = typeof(TDerived);
         return _poolsByType.TryGetValue(type, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize<TDerived>() where TDerived : class, TBase
     {
+        if (_disposed)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
+
         var type = typeof(TDerived);
         return _poolsByType.TryGetValue(type, out var pool) ? pool.MaxSize : 0;
     }
 
     public void Clear()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         foreach (var pool in _poolsByType.Values)
         {
             pool.Clear();
