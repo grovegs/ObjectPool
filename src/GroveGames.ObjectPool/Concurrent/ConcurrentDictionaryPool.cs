@@ -8,19 +8,9 @@ public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKe
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentDictionaryPool<TKey, TValue>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentDictionaryPool<TKey, TValue>)) : _pool.MaxSize;
 
-    public ConcurrentDictionaryPool(int capacity, int maxSize)
+    public ConcurrentDictionaryPool(int capacity, int maxSize, IEqualityComparer<TKey>? comparer = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-
-        _pool = new ConcurrentObjectPool<Dictionary<TKey, TValue>>(() => new Dictionary<TKey, TValue>(capacity), static dict => dict.Clear(), maxSize);
-        _disposed = false;
-    }
-
-    public ConcurrentDictionaryPool(int capacity, IEqualityComparer<TKey> comparer, int maxSize)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-        ArgumentNullException.ThrowIfNull(comparer);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<Dictionary<TKey, TValue>>(() => new Dictionary<TKey, TValue>(capacity, comparer), static dict => dict.Clear(), maxSize);
