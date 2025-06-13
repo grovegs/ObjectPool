@@ -8,7 +8,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     private readonly int _maxSize;
     private bool _disposed;
 
-    public int Count => _disposed ? 0 : _items.Count;
+    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _items.Count;
     public int MaxSize => _maxSize;
 
     public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize)
