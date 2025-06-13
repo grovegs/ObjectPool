@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace GroveGames.ObjectPool;
+namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 {
