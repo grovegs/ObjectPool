@@ -1,11 +1,13 @@
+using System.Collections.Frozen;
+
 namespace GroveGames.ObjectPool;
 
 public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> where TBase : class
 {
-    private readonly IReadOnlyDictionary<Type, IObjectPool<TBase>> _poolsByType;
+    private readonly FrozenDictionary<Type, IObjectPool<TBase>> _poolsByType;
     private bool _disposed;
 
-    public MultiTypeObjectPool(IReadOnlyDictionary<Type, IObjectPool<TBase>> poolsByType)
+    public MultiTypeObjectPool(FrozenDictionary<Type, IObjectPool<TBase>> poolsByType)
     {
         ArgumentNullException.ThrowIfNull(poolsByType);
         ArgumentOutOfRangeException.ThrowIfZero(poolsByType.Count, nameof(poolsByType));
