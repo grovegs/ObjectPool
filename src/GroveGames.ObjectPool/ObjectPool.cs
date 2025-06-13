@@ -11,22 +11,16 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     public int Count => _items.Count;
     public int MaxSize => _maxSize;
 
-    public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize, int initialSize, bool prewarm)
+    public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
 
         _items = new Queue<T>(maxSize);
         _factory = factory;
         _onReturn = onReturn;
         _maxSize = maxSize;
         _disposed = false;
-
-        if (prewarm && initialSize > 0)
-        {
-            Prewarm(initialSize);
-        }
     }
 
     public T Rent()
@@ -45,16 +39,6 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
         if (_items.Count < _maxSize)
         {
-            _items.Enqueue(item);
-        }
-    }
-
-    private void Prewarm(int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            var item = _factory();
-            _onReturn?.Invoke(item);
             _items.Enqueue(item);
         }
     }
