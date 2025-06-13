@@ -11,14 +11,13 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     private volatile int _count;
     private volatile bool _disposed;
 
-    public int Count => _count;
-    public int MaxSize => _maxSize;
+    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _count;
+    public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _maxSize;
 
-    public ConcurrentObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize, int initialSize, bool prewarm)
+    public ConcurrentObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
 
         _items = new ConcurrentQueue<T>();
         _factory = factory;
@@ -26,16 +25,13 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         _maxSize = maxSize;
         _count = 0;
         _disposed = false;
-
-        if (prewarm && initialSize > 0)
-        {
-            Prewarm(initialSize);
-        }
     }
 
     public T Rent()
     {
-        if (_items.TryDequeue(out T? item))
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_items.TryDequeue(out var item))
         {
             Interlocked.Decrement(ref _count);
             return item;
@@ -46,14 +42,11 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public void Return(T item)
     {
-        if (_disposed)
-        {
-            return;
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _onReturn?.Invoke(item);
 
-        int count = Interlocked.Increment(ref _count);
+        var count = Interlocked.Increment(ref _count);
 
         if (count <= _maxSize)
         {
@@ -65,19 +58,10 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         }
     }
 
-    private void Prewarm(int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            var item = _factory();
-            _onReturn?.Invoke(item);
-            _items.Enqueue(item);
-            Interlocked.Increment(ref _count);
-        }
-    }
-
     public void Clear()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         _items.Clear();
         Interlocked.Exchange(ref _count, 0);
     }
