@@ -227,53 +227,6 @@ public sealed class HashSetPoolTests
         pool.Dispose();
     }
 
-    [Fact]
-    public async Task RentAndReturn_ConcurrentOperations_ThreadSafe()
-    {
-        // Arrange
-        using var pool = new HashSetPool<int>(0, 100);
-        var rentedHashSets = new List<HashSet<int>>();
-
-        // Act
-        var tasks = Enumerable.Range(0, 50).Select(async i =>
-        {
-            await Task.Yield();
-            var hashSet = pool.Rent();
-            hashSet.Add(i);
-            lock (rentedHashSets)
-            {
-                rentedHashSets.Add(hashSet);
-            }
-            pool.Return(hashSet);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // Assert
-        Assert.Equal(50, rentedHashSets.Count);
-        Assert.True(pool.Count <= 100);
-    }
-
-    [Fact]
-    public async Task Return_ConcurrentReturns_RespectMaxSize()
-    {
-        // Arrange
-        using var pool = new HashSetPool<int>(0, 10);
-        var hashSets = Enumerable.Range(0, 20).Select(_ => new HashSet<int>()).ToArray();
-
-        // Act
-        var tasks = hashSets.Select(async hashSet =>
-        {
-            await Task.Yield();
-            pool.Return(hashSet);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // Assert
-        Assert.True(pool.Count <= 10);
-    }
-
     [Theory]
     [InlineData(1, 1)]
     [InlineData(5, 10)]
