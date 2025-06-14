@@ -10,11 +10,12 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     private readonly Action<T>? _onReturn;
     private readonly int _initialSize;
     private readonly int _maxSize;
+    private volatile int _count;
     private volatile int _disposed;
 
     public int Count => _disposed == 1
         ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>))
-        : _items.Count;
+        : _count;
 
     public int MaxSize => _disposed == 1
         ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>))
@@ -33,6 +34,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         _onReturn = onReturn;
         _initialSize = initialSize;
         _maxSize = maxSize;
+        _count = 0;
         _disposed = 0;
     }
 
@@ -42,6 +44,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
         if (_items.TryDequeue(out var pooledItem))
         {
+            Interlocked.Decrement(ref _count);
             _onRent?.Invoke(pooledItem);
             return pooledItem;
         }
@@ -57,9 +60,13 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
         _onReturn?.Invoke(item);
 
-        if (_items.Count < _maxSize)
+        if (Interlocked.Increment(ref _count) <= _maxSize)
         {
             _items.Enqueue(item);
+        }
+        else
+        {
+            Interlocked.Decrement(ref _count);
         }
     }
 
@@ -68,6 +75,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _items.Clear();
+        Interlocked.Exchange(ref _count, 0);
     }
 
     public void Dispose()
