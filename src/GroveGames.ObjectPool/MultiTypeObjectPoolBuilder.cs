@@ -12,9 +12,9 @@ public sealed class MultiTypeObjectPoolBuilder<TBase> where TBase : class
         _poolsByType = [];
     }
 
-    public MultiTypeObjectPoolBuilder<TBase> AddPool<TDerived>(Func<TDerived> factory, Action<TDerived>? onReturn, int maxSize) where TDerived : class, TBase
+    public MultiTypeObjectPoolBuilder<TBase> AddPool<TDerived>(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize) where TDerived : class, TBase
     {
-        var pool = new TypedObjectPool<TBase, TDerived>(factory, onReturn, maxSize);
+        var pool = new TypedObjectPool<TBase, TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         var type = typeof(TDerived);
         ref var location = ref CollectionsMarshal.GetValueRefOrAddDefault(_poolsByType, type, out bool exists);
 

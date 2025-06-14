@@ -8,11 +8,13 @@ public sealed class LinkedListPool<T> : ILinkedListPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(LinkedListPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(LinkedListPool<T>)) : _pool.MaxSize;
 
-    public LinkedListPool(int maxSize)
+    public LinkedListPool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ObjectPool<LinkedList<T>>(static () => new LinkedList<T>(), static linkedList => linkedList.Clear(), maxSize);
+        _pool = new ObjectPool<LinkedList<T>>(static () => new LinkedList<T>(), null, static linkedList => linkedList.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

@@ -8,12 +8,14 @@ public sealed class StackPool<T> : IStackPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(StackPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(StackPool<T>)) : _pool.MaxSize;
 
-    public StackPool(int maxSize, int capacity)
+    public StackPool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-        _pool = new ObjectPool<Stack<T>>(() => new Stack<T>(capacity), static stack => stack.Clear(), maxSize);
+        _pool = new ObjectPool<Stack<T>>(static () => new Stack<T>(), null, static stack => stack.Clear(), initialSize, maxSize);
+        _disposed = false;
     }
 
     public Stack<T> Rent()

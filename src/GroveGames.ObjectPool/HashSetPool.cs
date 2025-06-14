@@ -8,12 +8,13 @@ public sealed class HashSetPool<T> : IHashSetPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(HashSetPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(HashSetPool<T>)) : _pool.MaxSize;
 
-    public HashSetPool(int maxSize, int capacity, IEqualityComparer<T>? comparer = null)
+    public HashSetPool(int initialSize, int maxSize, IEqualityComparer<T>? comparer = null)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-        _pool = new ObjectPool<HashSet<T>>(() => new HashSet<T>(capacity, comparer), static hashSet => hashSet.Clear(), maxSize);
+        _pool = new ObjectPool<HashSet<T>>(() => new HashSet<T>(comparer), null, static hashSet => hashSet.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

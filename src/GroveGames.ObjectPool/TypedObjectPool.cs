@@ -8,12 +8,14 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(TypedObjectPool<TBase, TDerived>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(TypedObjectPool<TBase, TDerived>)) : _pool.MaxSize;
 
-    public TypedObjectPool(Func<TDerived> factory, Action<TDerived>? onReturn, int maxSize)
+    public TypedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ObjectPool<TDerived>(factory, onReturn, maxSize);
+        _pool = new ObjectPool<TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         _disposed = false;
     }
 

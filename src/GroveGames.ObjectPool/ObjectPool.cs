@@ -4,6 +4,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 {
     private readonly Queue<T> _items;
     private readonly Func<T> _factory;
+    private readonly Action<T>? _onRent;
     private readonly Action<T>? _onReturn;
     private readonly int _maxSize;
     private bool _disposed;
@@ -11,13 +12,16 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _items.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _maxSize;
 
-    public ObjectPool(Func<T> factory, Action<T>? onReturn, int maxSize)
+    public ObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _items = new Queue<T>(maxSize);
+        _items = new Queue<T>(initialSize);
         _factory = factory;
+        _onRent = onRent;
         _onReturn = onReturn;
         _maxSize = maxSize;
         _disposed = false;
@@ -27,7 +31,9 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return _items.TryDequeue(out var item) ? item : _factory();
+        var item = _items.TryDequeue(out var pooledItem) ? pooledItem : _factory();
+        _onRent?.Invoke(item);
+        return item;
     }
 
     public void Return(T item)

@@ -8,12 +8,13 @@ public sealed class DictionaryPool<TKey, TValue> : IDictionaryPool<TKey, TValue>
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(DictionaryPool<TKey, TValue>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(DictionaryPool<TKey, TValue>)) : _pool.MaxSize;
 
-    public DictionaryPool(int maxSize, int capacity, IEqualityComparer<TKey>? comparer = null)
+    public DictionaryPool(int initialSize, int maxSize, IEqualityComparer<TKey>? comparer = null)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-        _pool = new ObjectPool<Dictionary<TKey, TValue>>(() => new Dictionary<TKey, TValue>(capacity, comparer), static dictionary => dictionary.Clear(), maxSize);
+        _pool = new ObjectPool<Dictionary<TKey, TValue>>(() => new Dictionary<TKey, TValue>(comparer), null, static dictionary => dictionary.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

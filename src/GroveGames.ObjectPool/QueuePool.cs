@@ -8,12 +8,13 @@ public sealed class QueuePool<T> : IQueuePool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(QueuePool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(QueuePool<T>)) : _pool.MaxSize;
 
-    public QueuePool(int maxSize, int capacity)
+    public QueuePool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-        _pool = new ObjectPool<Queue<T>>(() => new Queue<T>(capacity), static queue => queue.Clear(), maxSize);
+        _pool = new ObjectPool<Queue<T>>(static () => new Queue<T>(), null, static queue => queue.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

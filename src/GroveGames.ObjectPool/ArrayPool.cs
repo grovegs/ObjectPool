@@ -3,14 +3,18 @@ namespace GroveGames.ObjectPool;
 public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 {
     private readonly Dictionary<int, ObjectPool<T[]>> _poolsBySize;
+    private readonly int _initialSize;
     private readonly int _maxSize;
     private bool _disposed;
 
-    public ArrayPool(int maxSize)
+    public ArrayPool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _poolsBySize = [];
+        _initialSize = initialSize;
         _maxSize = maxSize;
         _disposed = false;
     }
@@ -40,28 +44,23 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         if (!_poolsBySize.TryGetValue(size, out var pool))
         {
-            pool = new ObjectPool<T[]>(() => new T[size], null, _maxSize);
+            pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
             _poolsBySize[size] = pool;
         }
 
         return pool.Rent();
     }
 
-    public void Return(T[] array, bool clearArray = false)
+    public void Return(T[] array)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(array);
-
-        if (clearArray)
-        {
-            Array.Clear(array);
-        }
 
         var size = array.Length;
 
         if (!_poolsBySize.TryGetValue(size, out var pool))
         {
-            pool = new ObjectPool<T[]>(() => new T[size], null, _maxSize);
+            pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
             _poolsBySize[size] = pool;
         }
 

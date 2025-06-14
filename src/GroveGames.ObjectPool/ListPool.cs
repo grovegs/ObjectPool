@@ -8,12 +8,14 @@ public sealed class ListPool<T> : IListPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ListPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ListPool<T>)) : _pool.MaxSize;
 
-    public ListPool(int maxSize, int capacity)
+    public ListPool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-        _pool = new ObjectPool<List<T>>(() => new List<T>(capacity), static list => list.Clear(), maxSize);
+        _pool = new ObjectPool<List<T>>(static () => [], null, static list => list.Clear(), initialSize, maxSize);
+        _disposed = false;
     }
 
     public List<T> Rent()
