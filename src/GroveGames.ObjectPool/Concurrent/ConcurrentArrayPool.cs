@@ -7,7 +7,7 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
     private readonly ConcurrentDictionary<int, ConcurrentObjectPool<T[]>> _poolsBySize;
     private readonly int _initialSize;
     private readonly int _maxSize;
-    private volatile bool _disposed;
+    private volatile int _disposed;
 
     public ConcurrentArrayPool(int initialSize, int maxSize)
     {
@@ -18,52 +18,56 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
         _poolsBySize = new ConcurrentDictionary<int, ConcurrentObjectPool<T[]>>();
         _initialSize = initialSize;
         _maxSize = maxSize;
-        _disposed = false;
+        _disposed = 0;
     }
 
     public int Count(int size)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
         return _poolsBySize.TryGetValue(size, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int size)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
         return _poolsBySize.ContainsKey(size) || size > 0 ? _maxSize : 0;
     }
 
     public T[] Rent(int size)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (size == 0)
         {
             return [];
         }
 
-        var pool = _poolsBySize.GetOrAdd(size, new ConcurrentObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize));
+        var pool = _poolsBySize.GetOrAdd(size, s => new ConcurrentObjectPool<T[]>(() => new T[s], null, null, _initialSize, _maxSize));
         return pool.Rent();
     }
 
     public void Return(T[] array)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_disposed == 1)
+        {
+            return;
+        }
 
         var size = array.Length;
-        var pool = _poolsBySize.GetOrAdd(size, new ConcurrentObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize));
-        pool.Return(array);
+
+        if (_poolsBySize.TryGetValue(size, out var pool))
+        {
+            pool.Return(array);
+        }
     }
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _poolsBySize.Values)
+        foreach (var kvp in _poolsBySize)
         {
-            pool.Clear();
+            kvp.Value.Clear();
         }
 
         _poolsBySize.Clear();
@@ -71,16 +75,14 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 
     public void Dispose()
     {
-        if (_disposed)
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
         {
             return;
         }
 
-        _disposed = true;
-
-        foreach (var pool in _poolsBySize.Values)
+        foreach (var kvp in _poolsBySize)
         {
-            pool.Dispose();
+            kvp.Value.Dispose();
         }
 
         _poolsBySize.Clear();

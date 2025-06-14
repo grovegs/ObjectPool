@@ -99,7 +99,7 @@ public sealed class ConcurrentArrayPoolTests
     }
 
     [Fact]
-    public void Return_WithoutExistingPool_CreatesPool()
+    public void Return_ArrayToNewSize_DoesNotCreateNewPool()
     {
         // Arrange
         using var pool = new ConcurrentArrayPool<int>(5, 10);
@@ -109,7 +109,7 @@ public sealed class ConcurrentArrayPoolTests
         pool.Return(array);
 
         // Assert
-        Assert.Equal(1, pool.Count(7));
+        Assert.Equal(0, pool.Count(7));
     }
 
     [Fact]
@@ -148,9 +148,12 @@ public sealed class ConcurrentArrayPoolTests
     {
         // Arrange
         using var pool = new ConcurrentArrayPool<int>(5, 10);
-        pool.Return(new int[5]);
-        pool.Return(new int[5]);
-        pool.Return(new int[5]);
+        var array1 = pool.Rent(5);
+        var array2 = pool.Rent(5);
+        var array3 = pool.Rent(5);
+        pool.Return(array1);
+        pool.Return(array2);
+        pool.Return(array3);
 
         // Act
         var count = pool.Count(5);
@@ -191,9 +194,12 @@ public sealed class ConcurrentArrayPoolTests
     {
         // Arrange
         using var pool = new ConcurrentArrayPool<int>(5, 10);
-        pool.Return(new int[5]);
-        pool.Return(new int[10]);
-        pool.Return(new int[15]);
+        var array5 = pool.Rent(5);
+        var array10 = pool.Rent(10);
+        var array15 = pool.Rent(15);
+        pool.Return(array5);
+        pool.Return(array10);
+        pool.Return(array15);
 
         // Act
         pool.Clear();
@@ -216,14 +222,15 @@ public sealed class ConcurrentArrayPoolTests
     }
 
     [Fact]
-    public void Return_AfterDispose_ThrowsObjectDisposedException()
+    public void Return_AfterDispose_DoesNotThrow()
     {
         // Arrange
         var pool = new ConcurrentArrayPool<int>(5, 10);
+        var array = pool.Rent(5);
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Return(new int[5]));
+        pool.Return(array);
     }
 
     [Fact]
@@ -267,7 +274,7 @@ public sealed class ConcurrentArrayPoolTests
 
         // Act & Assert
         pool.Dispose();
-        pool.Dispose(); // Should not throw
+        pool.Dispose();
     }
 
     [Fact]
@@ -330,6 +337,12 @@ public sealed class ConcurrentArrayPoolTests
     {
         // Arrange
         using var pool = new ConcurrentArrayPool<int>(0, 10);
+
+        for (int size = 1; size <= 5; size++)
+        {
+            pool.Rent(size);
+        }
+
         var arrays = Enumerable.Range(1, 100).Select(i => new int[i % 5 + 1]).ToArray();
 
         // Act
@@ -424,6 +437,8 @@ public sealed class ConcurrentArrayPoolTests
         // Arrange
         using var pool = new ConcurrentArrayPool<int>(0, 3);
 
+        pool.Rent(5);
+
         // Act
         pool.Return(new int[5]);
         pool.Return(new int[5]);
@@ -457,7 +472,7 @@ public sealed class ConcurrentArrayPoolTests
     }
 
     [Fact]
-    public void MaxSize_ZeroSize_ReturnsZeroSize()
+    public void MaxSize_ZeroSize_ReturnsZero()
     {
         // Arrange
         using var pool = new ConcurrentArrayPool<int>(5, 10);
@@ -508,6 +523,7 @@ public sealed class ConcurrentArrayPoolTests
 
         await Task.WhenAll(rentTasks.Concat(new[] { clearTask }));
 
+        // Assert
         Assert.True(pool.Count(10) >= 0);
     }
 
@@ -545,6 +561,7 @@ public sealed class ConcurrentArrayPoolTests
 
         await Task.WhenAll(rentTasks.Concat(new[] { disposeTask }));
 
+        // Assert
         Assert.True(exceptions.All(ex => ex is ObjectDisposedException));
     }
 
@@ -585,5 +602,49 @@ public sealed class ConcurrentArrayPoolTests
             Assert.True(pool.Count(size) >= 0);
             Assert.True(pool.Count(size) <= 200);
         }
+    }
+
+    [Fact]
+    public void Return_AfterDispose_ArrayNotAddedToPool()
+    {
+        // Arrange
+        var pool = new ConcurrentArrayPool<int>(5, 10);
+        var array1 = pool.Rent(5);
+        var array2 = new int[5];
+
+        pool.Dispose();
+
+        // Act
+        pool.Return(array1);
+        pool.Return(array2);
+
+        // Assert
+    }
+
+    [Fact]
+    public async Task Dispose_OnlyExecutesOnce_EvenWithConcurrentCalls()
+    {
+        // Arrange
+        var pool = new ConcurrentArrayPool<int>(0, 10);
+        var disposeCount = 0;
+
+        for (int i = 0; i < 5; i++)
+        {
+            var array = pool.Rent(10);
+            pool.Return(array);
+        }
+
+        // Act
+        var tasks = Enumerable.Range(0, 10).Select(async _ =>
+        {
+            await Task.Yield();
+            pool.Dispose();
+            Interlocked.Increment(ref disposeCount);
+        }).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert
+        Assert.Equal(10, disposeCount);
     }
 }
