@@ -7,12 +7,13 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
     private readonly FrozenDictionary<Type, IObjectPool<TBase>> _poolsByType;
     private volatile bool _disposed;
 
-    public ConcurrentMultiTypeObjectPool(FrozenDictionary<Type, IObjectPool<TBase>> poolsByType)
+    public ConcurrentMultiTypeObjectPool(Action<ConcurrentMultiTypeObjectPoolBuilder<TBase>> configure)
     {
-        ArgumentNullException.ThrowIfNull(poolsByType);
-        ArgumentOutOfRangeException.ThrowIfZero(poolsByType.Count, nameof(poolsByType));
+        ArgumentNullException.ThrowIfNull(configure);
 
-        _poolsByType = poolsByType;
+        var builder = new ConcurrentMultiTypeObjectPoolBuilder<TBase>();
+        configure(builder);
+        _poolsByType = builder.Build();
         _disposed = false;
     }
 
