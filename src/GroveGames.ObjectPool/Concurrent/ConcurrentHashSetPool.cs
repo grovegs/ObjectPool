@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T>
+public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T> where T : notnull
 {
     private readonly ConcurrentObjectPool<HashSet<T>> _pool;
     private volatile bool _disposed;

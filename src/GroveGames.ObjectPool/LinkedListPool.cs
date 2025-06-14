@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class LinkedListPool<T> : ILinkedListPool<T>
+public sealed class LinkedListPool<T> : ILinkedListPool<T> where T : notnull
 {
     private readonly ObjectPool<LinkedList<T>> _pool;
     private bool _disposed;

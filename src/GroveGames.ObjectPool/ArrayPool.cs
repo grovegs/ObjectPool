@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class ArrayPool<T> : IArrayPool<T>
+public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 {
     private readonly Dictionary<int, Queue<T[]>> _poolsBySize;
     private readonly int _maxSize;

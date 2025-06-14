@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public interface IArrayPool<T> : IDisposable
+public interface IArrayPool<T> : IDisposable where T : notnull
 {
     int Count(int size);
     int MaxSize(int size);

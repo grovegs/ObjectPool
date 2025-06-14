@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class QueuePool<T> : IQueuePool<T>
+public sealed class QueuePool<T> : IQueuePool<T> where T : notnull
 {
     private readonly ObjectPool<Queue<T>> _pool;
     private bool _disposed;

@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentArrayPool<T> : IArrayPool<T>
+public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 {
     private readonly ConcurrentDictionary<int, ConcurrentQueue<T[]>> _poolsBySize;
     private readonly int _maxSize;

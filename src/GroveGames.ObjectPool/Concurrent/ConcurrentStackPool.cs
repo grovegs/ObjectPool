@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentStackPool<T> : IStackPool<T>
+public sealed class ConcurrentStackPool<T> : IStackPool<T> where T : notnull
 {
     private readonly ConcurrentObjectPool<Stack<T>> _pool;
     private volatile bool _disposed;

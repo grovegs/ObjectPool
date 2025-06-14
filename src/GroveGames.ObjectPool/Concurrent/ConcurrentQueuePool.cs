@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentQueuePool<T> : IQueuePool<T>
+public sealed class ConcurrentQueuePool<T> : IQueuePool<T> where T : class
 {
     private readonly ConcurrentObjectPool<Queue<T>> _pool;
     private volatile bool _disposed;

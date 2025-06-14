@@ -1,6 +1,6 @@
 namespace GroveGames.ObjectPool;
 
-public sealed class StackPool<T> : IStackPool<T>
+public sealed class StackPool<T> : IStackPool<T> where T : notnull
 {
     private readonly ObjectPool<Stack<T>> _pool;
     private bool _disposed;
@@ -14,7 +14,6 @@ public sealed class StackPool<T> : IStackPool<T>
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _pool = new ObjectPool<Stack<T>>(() => new Stack<T>(capacity), static stack => stack.Clear(), maxSize);
-        _disposed = false;
     }
 
     public Stack<T> Rent()
