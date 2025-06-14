@@ -16,14 +16,12 @@ public sealed class MultiTypeObjectPoolBuilder<TBase> where TBase : class
     {
         var pool = new TypedObjectPool<TBase, TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         var type = typeof(TDerived);
-        ref var location = ref CollectionsMarshal.GetValueRefOrAddDefault(_poolsByType, type, out bool exists);
 
-        if (exists)
+        if (!_poolsByType.TryAdd(type, pool))
         {
             throw new ArgumentException($"Pool for type {type.Name} has already been added.");
         }
 
-        location = pool;
         return this;
     }
 
