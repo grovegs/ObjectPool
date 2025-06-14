@@ -8,12 +8,13 @@ public sealed class ConcurrentQueuePool<T> : IQueuePool<T> where T : class
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentQueuePool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentQueuePool<T>)) : _pool.MaxSize;
 
-    public ConcurrentQueuePool(int capacity, int maxSize)
+    public ConcurrentQueuePool(int initialSize, int maxSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ConcurrentObjectPool<Queue<T>>(() => new Queue<T>(capacity), static queue => queue.Clear(), maxSize);
+        _pool = new ConcurrentObjectPool<Queue<T>>(static () => new Queue<T>(), null, static queue => queue.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

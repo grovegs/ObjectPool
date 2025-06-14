@@ -8,12 +8,13 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentListPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentListPool<T>)) : _pool.MaxSize;
 
-    public ConcurrentListPool(int capacity, int maxSize)
+    public ConcurrentListPool(int initialSize, int maxSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ConcurrentObjectPool<List<T>>(() => new List<T>(capacity), static list => list.Clear(), maxSize);
+        _pool = new ConcurrentObjectPool<List<T>>(static () => [], null, static list => list.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

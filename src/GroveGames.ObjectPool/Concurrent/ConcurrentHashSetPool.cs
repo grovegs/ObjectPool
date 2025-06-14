@@ -8,22 +8,13 @@ public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentHashSetPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentHashSetPool<T>)) : _pool.MaxSize;
 
-    public ConcurrentHashSetPool(int capacity, int maxSize)
+    public ConcurrentHashSetPool(int initialSize, int maxSize, IEqualityComparer<T>? comparer = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ConcurrentObjectPool<HashSet<T>>(() => new HashSet<T>(capacity), static set => set.Clear(), maxSize);
-        _disposed = false;
-    }
-
-    public ConcurrentHashSetPool(int capacity, IEqualityComparer<T> comparer, int maxSize)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-        ArgumentNullException.ThrowIfNull(comparer);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
-
-        _pool = new ConcurrentObjectPool<HashSet<T>>(() => new HashSet<T>(capacity, comparer), static set => set.Clear(), maxSize);
+        _pool = new ConcurrentObjectPool<HashSet<T>>(() => new HashSet<T>(comparer), null, static set => set.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

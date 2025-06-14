@@ -8,12 +8,13 @@ public sealed class ConcurrentStackPool<T> : IStackPool<T> where T : notnull
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentStackPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentStackPool<T>)) : _pool.MaxSize;
 
-    public ConcurrentStackPool(int capacity, int maxSize)
+    public ConcurrentStackPool(int initialSize, int maxSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ConcurrentObjectPool<Stack<T>>(() => new Stack<T>(capacity), static stack => stack.Clear(), maxSize);
+        _pool = new ConcurrentObjectPool<Stack<T>>(static () => new Stack<T>(), null, static stack => stack.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

@@ -8,11 +8,13 @@ public sealed class ConcurrentLinkedListPool<T> : ILinkedListPool<T> where T : n
     public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentLinkedListPool<T>)) : _pool.Count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentLinkedListPool<T>)) : _pool.MaxSize;
 
-    public ConcurrentLinkedListPool(int maxSize)
+    public ConcurrentLinkedListPool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ConcurrentObjectPool<LinkedList<T>>(() => new LinkedList<T>(), static list => list.Clear(), maxSize);
+        _pool = new ConcurrentObjectPool<LinkedList<T>>(static () => new LinkedList<T>(), null, static list => list.Clear(), initialSize, maxSize);
         _disposed = false;
     }
 

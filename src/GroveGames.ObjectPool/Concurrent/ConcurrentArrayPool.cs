@@ -6,13 +6,17 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 {
     private readonly ConcurrentDictionary<int, ConcurrentObjectPool<T[]>> _poolsBySize;
     private readonly int _maxSize;
+    private readonly int _initialSize;
     private volatile bool _disposed;
 
-    public ConcurrentArrayPool(int maxSize)
+    public ConcurrentArrayPool(int initialSize, int maxSize)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _poolsBySize = new ConcurrentDictionary<int, ConcurrentObjectPool<T[]>>();
+        _initialSize = initialSize;
         _maxSize = maxSize;
         _disposed = false;
     }
@@ -40,21 +44,16 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
             return [];
         }
 
-        var pool = _poolsBySize.GetOrAdd(size, new ConcurrentObjectPool<T[]>(() => new T[size], null, _maxSize));
+        var pool = _poolsBySize.GetOrAdd(size, new ConcurrentObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize));
         return pool.Rent();
     }
 
-    public void Return(T[] array, bool clearArray = false)
+    public void Return(T[] array)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (clearArray)
-        {
-            Array.Clear(array);
-        }
-
         var size = array.Length;
-        var pool = _poolsBySize.GetOrAdd(size, new ConcurrentObjectPool<T[]>(() => new T[size], null, _maxSize));
+        var pool = _poolsBySize.GetOrAdd(size, new ConcurrentObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize));
         pool.Return(array);
     }
 
