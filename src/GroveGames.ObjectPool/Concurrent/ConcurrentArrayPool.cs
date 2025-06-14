@@ -24,12 +24,14 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
     public int Count(int size)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
         return _poolsBySize.TryGetValue(size, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int size)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
         return _poolsBySize.ContainsKey(size) || size > 0 ? _maxSize : 0;
     }
 
@@ -48,10 +50,7 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 
     public void Return(T[] array)
     {
-        if (_disposed == 1)
-        {
-            return;
-        }
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         var size = array.Length;
 
