@@ -390,7 +390,7 @@ public sealed class MultiTypeObjectPoolTests
         });
 
         // Act & Assert
-        pool.Clear(); // Should not throw
+        pool.Clear();
         Assert.Equal(0, pool.Count<TestDerived1>());
         Assert.Equal(0, pool.Count<TestDerived2>());
     }
