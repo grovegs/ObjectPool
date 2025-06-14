@@ -2,7 +2,7 @@ namespace GroveGames.ObjectPool;
 
 public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 {
-    private readonly Dictionary<int, Queue<T[]>> _poolsBySize;
+    private readonly Dictionary<int, ObjectPool<T[]>> _poolsBySize;
     private readonly int _maxSize;
     private bool _disposed;
 
@@ -19,7 +19,7 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return _poolsBySize.TryGetValue(size, out var queue) ? queue.Count : 0;
+        return _poolsBySize.TryGetValue(size, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int size)
@@ -38,17 +38,19 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
             return [];
         }
 
-        if (_poolsBySize.TryGetValue(size, out var queue) && queue.TryDequeue(out var array))
+        if (!_poolsBySize.TryGetValue(size, out var pool))
         {
-            return array;
+            pool = new ObjectPool<T[]>(() => new T[size], null, _maxSize);
+            _poolsBySize[size] = pool;
         }
 
-        return new T[size];
+        return pool.Rent();
     }
 
     public void Return(T[] array, bool clearArray = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(array);
 
         if (clearArray)
         {
@@ -57,25 +59,22 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         var size = array.Length;
 
-        if (!_poolsBySize.TryGetValue(size, out var queue))
+        if (!_poolsBySize.TryGetValue(size, out var pool))
         {
-            queue = new Queue<T[]>();
-            _poolsBySize[size] = queue;
+            pool = new ObjectPool<T[]>(() => new T[size], null, _maxSize);
+            _poolsBySize[size] = pool;
         }
 
-        if (queue.Count < _maxSize)
-        {
-            queue.Enqueue(array);
-        }
+        pool.Return(array);
     }
 
     public void Clear()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        foreach (var queue in _poolsBySize.Values)
+        foreach (var pool in _poolsBySize.Values)
         {
-            queue.Clear();
+            pool.Clear();
         }
 
         _poolsBySize.Clear();
@@ -90,9 +89,9 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         _disposed = true;
 
-        foreach (var queue in _poolsBySize.Values)
+        foreach (var pool in _poolsBySize.Values)
         {
-            queue.Clear();
+            pool.Dispose();
         }
 
         _poolsBySize.Clear();
