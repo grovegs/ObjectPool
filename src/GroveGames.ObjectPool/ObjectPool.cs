@@ -27,7 +27,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return _items.TryDequeue(out T? item) ? item : _factory();
+        return _items.TryDequeue(out var item) ? item : _factory();
     }
 
     public void Return(T item)
