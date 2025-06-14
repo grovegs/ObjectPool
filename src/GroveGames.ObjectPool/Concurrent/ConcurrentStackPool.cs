@@ -3,10 +3,10 @@ namespace GroveGames.ObjectPool.Concurrent;
 public sealed class ConcurrentStackPool<T> : IStackPool<T> where T : notnull
 {
     private readonly ConcurrentObjectPool<Stack<T>> _pool;
-    private volatile bool _disposed;
+    private volatile int _disposed;
 
-    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentStackPool<T>)) : _pool.Count;
-    public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentStackPool<T>)) : _pool.MaxSize;
+    public int Count => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentStackPool<T>)) : _pool.Count;
+    public int MaxSize => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentStackPool<T>)) : _pool.MaxSize;
 
     public ConcurrentStackPool(int initialSize, int maxSize)
     {
@@ -14,39 +14,43 @@ public sealed class ConcurrentStackPool<T> : IStackPool<T> where T : notnull
         ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _pool = new ConcurrentObjectPool<Stack<T>>(static () => new Stack<T>(), null, static stack => stack.Clear(), initialSize, maxSize);
-        _disposed = false;
+        _pool = new ConcurrentObjectPool<Stack<T>>(
+            static () => new Stack<T>(),
+            null,
+            static stack => stack.Clear(),
+            initialSize,
+            maxSize);
+        _disposed = 0;
     }
 
     public Stack<T> Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(Stack<T> stack)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Return(stack);
     }
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
     }
 
     public void Dispose()
     {
-        if (_disposed)
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
         {
             return;
         }
 
-        _disposed = true;
         _pool.Dispose();
     }
 }
