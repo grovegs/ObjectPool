@@ -2,24 +2,18 @@ namespace GroveGames.ObjectPool;
 
 public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
 {
-    private readonly Queue<TDerived> _items;
-    private readonly Func<TDerived> _factory;
-    private readonly Action<TDerived>? _onReturn;
-    private readonly int _maxSize;
+    private readonly ObjectPool<TDerived> _pool;
     private bool _disposed;
 
-    public int Count => _disposed ? throw new ObjectDisposedException(nameof(TypedObjectPool<TBase, TDerived>)) : _items.Count;
-    public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(TypedObjectPool<TBase, TDerived>)) : _maxSize;
+    public int Count => _disposed ? throw new ObjectDisposedException(nameof(TypedObjectPool<TBase, TDerived>)) : _pool.Count;
+    public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(TypedObjectPool<TBase, TDerived>)) : _pool.MaxSize;
 
     public TypedObjectPool(Func<TDerived> factory, Action<TDerived>? onReturn, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _items = new Queue<TDerived>(maxSize);
-        _factory = factory;
-        _onReturn = onReturn;
-        _maxSize = maxSize;
+        _pool = new ObjectPool<TDerived>(factory, onReturn, maxSize);
         _disposed = false;
     }
 
@@ -27,7 +21,7 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return _items.TryDequeue(out var item) ? item : _factory();
+        return _pool.Rent();
     }
 
     public void Return(TBase item)
@@ -35,19 +29,14 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         var derivedItem = (TDerived)item;
-        _onReturn?.Invoke(derivedItem);
-
-        if (_items.Count < _maxSize)
-        {
-            _items.Enqueue(derivedItem);
-        }
+        _pool.Return(derivedItem);
     }
 
     public void Clear()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        _items.Clear();
+        _pool.Clear();
     }
 
     public void Dispose()
@@ -58,13 +47,6 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
         }
 
         _disposed = true;
-
-        while (_items.TryDequeue(out var item))
-        {
-            if (item is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-        }
+        _pool.Dispose();
     }
 }
