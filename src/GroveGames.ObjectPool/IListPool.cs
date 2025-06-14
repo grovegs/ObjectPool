@@ -1,10 +1,5 @@
 namespace GroveGames.ObjectPool;
 
-public interface IListPool<T> : IDisposable
+public interface IListPool<T> : IObjectPool<List<T>> where T : notnull
 {
-    int Count { get; }
-    int MaxSize { get; }
-    List<T> Rent();
-    void Return(List<T> list);
-    void Clear();
 }

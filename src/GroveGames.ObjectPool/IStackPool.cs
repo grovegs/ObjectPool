@@ -1,10 +1,5 @@
 namespace GroveGames.ObjectPool;
 
-public interface IStackPool<T> : IDisposable
+public interface IStackPool<T> : IObjectPool<Stack<T>> where T : notnull
 {
-    int Count { get; }
-    int MaxSize { get; }
-    Stack<T> Rent();
-    void Return(Stack<T> stack);
-    void Clear();
 }
