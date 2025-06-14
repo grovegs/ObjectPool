@@ -7,12 +7,14 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
     private readonly FrozenDictionary<Type, IObjectPool<TBase>> _poolsByType;
     private bool _disposed;
 
-    public MultiTypeObjectPool(FrozenDictionary<Type, IObjectPool<TBase>> poolsByType)
+    public MultiTypeObjectPool(Action<MultiTypeObjectPoolBuilder<TBase>> configure)
     {
-        ArgumentNullException.ThrowIfNull(poolsByType);
-        ArgumentOutOfRangeException.ThrowIfZero(poolsByType.Count, nameof(poolsByType));
+        ArgumentNullException.ThrowIfNull(configure);
 
-        _poolsByType = poolsByType;
+        var builder = new MultiTypeObjectPoolBuilder<TBase>();
+        configure(builder);
+        _poolsByType = builder.Build();
+        _disposed = false;
     }
 
     public int Count<TDerived>() where TDerived : class, TBase
