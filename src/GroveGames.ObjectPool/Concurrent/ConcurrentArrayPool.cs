@@ -5,8 +5,8 @@ namespace GroveGames.ObjectPool.Concurrent;
 public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 {
     private readonly ConcurrentDictionary<int, ConcurrentObjectPool<T[]>> _poolsBySize;
-    private readonly int _maxSize;
     private readonly int _initialSize;
+    private readonly int _maxSize;
     private volatile bool _disposed;
 
     public ConcurrentArrayPool(int initialSize, int maxSize)
