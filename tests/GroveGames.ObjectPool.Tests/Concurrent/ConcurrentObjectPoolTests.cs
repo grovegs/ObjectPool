@@ -282,7 +282,7 @@ public sealed class ConcurrentObjectPoolTests
     }
 
     [Fact]
-    public async Task Return_ConcurrentReturns_MayExceedMaxSizeDueToRaceCondition()
+    public async Task Return_ConcurrentReturns_RespectsMaxSize()
     {
         // Arrange
         using var pool = new ConcurrentObjectPool<string>(() => "test", null, null, 0, 10);
@@ -298,8 +298,7 @@ public sealed class ConcurrentObjectPoolTests
         await Task.WhenAll(tasks);
 
         // Assert
-        Assert.True(pool.Count >= 10);
-        Assert.True(pool.Count <= 20);
+        Assert.Equal(10, pool.Count);
     }
 
     [Fact]
@@ -494,6 +493,7 @@ public sealed class ConcurrentObjectPoolTests
 
         // Assert
         Assert.Equal(totalOperations, completedOperations);
+        Assert.True(pool.Count <= 200);
     }
 
     [Fact]
@@ -516,6 +516,25 @@ public sealed class ConcurrentObjectPoolTests
         await Task.WhenAll(tasks);
 
         // Assert
-        Assert.True(pool.Count >= 0);
+        Assert.True(pool.Count <= 10);
+    }
+
+    [Fact]
+    public async Task Return_HighConcurrencyExceedingMaxSize_EnforcesMaxSize()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<string>(() => "test", null, null, 0, 5);
+
+        // Act
+        var tasks = Enumerable.Range(0, 100).Select(async i =>
+        {
+            await Task.Yield();
+            pool.Return($"item{i}");
+        }).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert
+        Assert.Equal(5, pool.Count);
     }
 }

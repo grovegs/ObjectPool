@@ -10,9 +10,10 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     private readonly Action<T>? _onReturn;
     private readonly int _initialSize;
     private readonly int _maxSize;
+    private volatile int _count;
     private volatile bool _disposed;
 
-    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _items.Count;
+    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _count;
     public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>)) : _maxSize;
 
     public ConcurrentObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
@@ -28,6 +29,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         _onReturn = onReturn;
         _initialSize = initialSize;
         _maxSize = maxSize;
+        _count = 0;
         _disposed = false;
     }
 
@@ -35,7 +37,14 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var item = _items.TryDequeue(out var pooledItem) ? pooledItem : _factory();
+        if (_items.TryDequeue(out var pooledItem))
+        {
+            Interlocked.Decrement(ref _count);
+            _onRent?.Invoke(pooledItem);
+            return pooledItem;
+        }
+
+        var item = _factory();
         _onRent?.Invoke(item);
         return item;
     }
@@ -46,9 +55,13 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
         _onReturn?.Invoke(item);
 
-        if (_items.Count < _maxSize)
+        if (Interlocked.Increment(ref _count) <= _maxSize)
         {
             _items.Enqueue(item);
+        }
+        else
+        {
+            Interlocked.Decrement(ref _count);
         }
     }
 
@@ -57,6 +70,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _items.Clear();
+        Interlocked.Exchange(ref _count, 0);
     }
 
     public void Dispose()
