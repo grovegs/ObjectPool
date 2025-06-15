@@ -189,7 +189,7 @@ public sealed class DictionaryPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public sealed class DictionaryPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -341,8 +341,8 @@ public sealed class DictionaryPoolTests
 
         // Act
         var dictionary = pool.Rent();
-        dictionary[1] = new List<string> { "a", "b" };
-        dictionary[2] = new List<string> { "c", "d" };
+        dictionary[1] = ["a", "b"];
+        dictionary[2] = ["c", "d"];
         pool.Return(dictionary);
 
         var reusedDictionary = pool.Rent();

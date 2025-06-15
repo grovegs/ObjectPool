@@ -152,7 +152,7 @@ public sealed class QueuePoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class QueuePoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -343,9 +343,9 @@ public sealed class QueuePoolTests
         // Arrange
         using var pool = new QueuePool<List<int>>(0, 5);
         var queue = pool.Rent();
-        queue.Enqueue(new List<int> { 1, 2, 3 });
-        queue.Enqueue(new List<int> { 4, 5, 6 });
-        queue.Enqueue(new List<int> { 7, 8, 9 });
+        queue.Enqueue([1, 2, 3]);
+        queue.Enqueue([4, 5, 6]);
+        queue.Enqueue([7, 8, 9]);
 
         // Act
         pool.Return(queue);

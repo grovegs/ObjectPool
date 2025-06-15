@@ -264,7 +264,7 @@ public sealed class ArrayPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]

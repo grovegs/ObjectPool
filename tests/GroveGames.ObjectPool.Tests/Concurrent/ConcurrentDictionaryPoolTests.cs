@@ -191,7 +191,7 @@ public sealed class ConcurrentDictionaryPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public sealed class ConcurrentDictionaryPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -313,7 +313,7 @@ public sealed class ConcurrentDictionaryPoolTests
 
         // Assert
         Assert.Equal(50, rentedDictionaries.Count);
-        Assert.All(rentedDictionaries, dict => Assert.Empty(dict));
+        Assert.All(rentedDictionaries, Assert.Empty);
     }
 
     [Fact]

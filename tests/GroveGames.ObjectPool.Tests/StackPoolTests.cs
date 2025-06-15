@@ -152,7 +152,7 @@ public sealed class StackPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class StackPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -343,9 +343,9 @@ public sealed class StackPoolTests
         // Arrange
         using var pool = new StackPool<List<int>>(0, 5);
         var stack = pool.Rent();
-        stack.Push(new List<int> { 1, 2, 3 });
-        stack.Push(new List<int> { 4, 5, 6 });
-        stack.Push(new List<int> { 7, 8, 9 });
+        stack.Push([1, 2, 3]);
+        stack.Push([4, 5, 6]);
+        stack.Push([7, 8, 9]);
 
         // Act
         pool.Return(stack);

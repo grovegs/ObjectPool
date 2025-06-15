@@ -190,7 +190,7 @@ public sealed class HashSetPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public sealed class HashSetPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -379,9 +379,9 @@ public sealed class HashSetPoolTests
         // Arrange
         using var pool = new HashSetPool<List<int>>(0, 5);
         var hashSet = pool.Rent();
-        hashSet.Add(new List<int> { 1, 2, 3 });
-        hashSet.Add(new List<int> { 4, 5, 6 });
-        hashSet.Add(new List<int> { 7, 8, 9 });
+        hashSet.Add([1, 2, 3]);
+        hashSet.Add([4, 5, 6]);
+        hashSet.Add([7, 8, 9]);
 
         // Act
         pool.Return(hashSet);

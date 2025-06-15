@@ -152,7 +152,7 @@ public sealed class LinkedListPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class LinkedListPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -280,8 +280,8 @@ public sealed class LinkedListPoolTests
         // Arrange
         using var pool = new LinkedListPool<List<int>>(0, 5);
         var linkedList = pool.Rent();
-        linkedList.AddLast(new List<int> { 1, 2, 3 });
-        linkedList.AddLast(new List<int> { 4, 5, 6 });
+        linkedList.AddLast([1, 2, 3]);
+        linkedList.AddLast([4, 5, 6]);
 
         // Act
         pool.Return(linkedList);

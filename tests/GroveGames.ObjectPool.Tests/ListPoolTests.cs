@@ -152,7 +152,7 @@ public sealed class ListPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class ListPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
@@ -340,9 +340,9 @@ public sealed class ListPoolTests
         // Arrange
         using var pool = new ListPool<List<int>>(0, 5);
         var list = pool.Rent();
-        list.Add(new List<int> { 1, 2, 3 });
-        list.Add(new List<int> { 4, 5, 6 });
-        list.Add(new List<int> { 7, 8, 9 });
+        list.Add([1, 2, 3]);
+        list.Add([4, 5, 6]);
+        list.Add([7, 8, 9]);
 
         // Act
         pool.Return(list);

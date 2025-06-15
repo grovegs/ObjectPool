@@ -78,7 +78,7 @@ public sealed class ObjectPoolTests
     {
         // Arrange
         var rentedItems = new List<string>();
-        using var pool = new ObjectPool<string>(() => "test", item => rentedItems.Add(item), null, 0, 5);
+        using var pool = new ObjectPool<string>(() => "test", rentedItems.Add, null, 0, 5);
 
         // Act
         var item = pool.Rent();
@@ -107,7 +107,7 @@ public sealed class ObjectPoolTests
     {
         // Arrange
         var returnedItems = new List<string>();
-        using var pool = new ObjectPool<string>(() => "test", null, item => returnedItems.Add(item), 0, 5);
+        using var pool = new ObjectPool<string>(() => "test", null, returnedItems.Add, 0, 5);
         var item = pool.Rent();
 
         // Act
@@ -195,7 +195,7 @@ public sealed class ObjectPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public sealed class ObjectPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]

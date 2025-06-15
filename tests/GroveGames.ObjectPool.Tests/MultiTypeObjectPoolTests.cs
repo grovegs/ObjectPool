@@ -67,7 +67,7 @@ public sealed class MultiTypeObjectPoolTests
         });
 
         // Act & Assert
-        var exception = Assert.Throws<InvalidOperationException>(() => pool.Rent<TestDerived2>());
+        var exception = Assert.Throws<InvalidOperationException>(pool.Rent<TestDerived2>);
         Assert.Contains("TestDerived2", exception.Message);
         Assert.Contains("not registered", exception.Message);
     }
@@ -250,7 +250,7 @@ public sealed class MultiTypeObjectPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Rent<TestDerived1>());
+        Assert.Throws<ObjectDisposedException>(pool.Rent<TestDerived1>);
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public sealed class MultiTypeObjectPoolTests
         pool.Dispose();
 
         // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
     }
 
     [Fact]
