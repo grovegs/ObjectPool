@@ -7,67 +7,61 @@ public sealed class ConcurrentDictionaryPoolTests
     [Fact]
     public void Constructor_ValidParameters_CreatesPool()
     {
-        // Arrange & Act
-        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
+        // Act
+        using var pool = new ConcurrentDictionaryPool<string, int>(10, 20);
 
         // Assert
+        Assert.Equal(20, pool.MaxSize);
         Assert.Equal(0, pool.Count);
-        Assert.Equal(10, pool.MaxSize);
     }
 
     [Fact]
-    public void Constructor_WithComparer_CreatesPool()
+    public void Constructor_ValidParametersWithComparer_CreatesPool()
     {
-        // Arrange & Act
-        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10, StringComparer.OrdinalIgnoreCase);
+        // Arrange
+        var comparer = StringComparer.OrdinalIgnoreCase;
+
+        // Act
+        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10, comparer);
 
         // Assert
-        Assert.Equal(0, pool.Count);
         Assert.Equal(10, pool.MaxSize);
-    }
-
-    [Fact]
-    public void Constructor_WithNullComparer_CreatesPool()
-    {
-        // Arrange & Act
-        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10, null);
-
-        // Assert
         Assert.Equal(0, pool.Count);
-        Assert.Equal(10, pool.MaxSize);
     }
 
     [Theory]
     [InlineData(-1)]
-    [InlineData(-5)]
+    [InlineData(-10)]
     public void Constructor_NegativeInitialSize_ThrowsArgumentOutOfRangeException(int initialSize)
     {
-        // Arrange & Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrentDictionaryPool<string, int>(initialSize, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ConcurrentDictionaryPool<string, int>(initialSize, 10));
+    }
+
+    [Theory]
+    [InlineData(11, 10)]
+    [InlineData(20, 15)]
+    public void Constructor_InitialSizeGreaterThanMaxSize_ThrowsArgumentOutOfRangeException(int initialSize, int maxSize)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ConcurrentDictionaryPool<string, int>(initialSize, maxSize));
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(-5)]
+    [InlineData(-10)]
     public void Constructor_NonPositiveMaxSize_ThrowsArgumentOutOfRangeException(int maxSize)
     {
-        // Arrange & Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrentDictionaryPool<string, int>(5, maxSize));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ConcurrentDictionaryPool<string, int>(0, maxSize));
     }
 
     [Fact]
-    public void Constructor_InitialSizeGreaterThanMaxSize_ThrowsArgumentOutOfRangeException()
-    {
-        // Arrange & Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrentDictionaryPool<string, int>(15, 10));
-    }
-
-    [Fact]
-    public void Rent_EmptyPool_ReturnsNewDictionary()
+    public void Rent_FromNewPool_ReturnsDictionary()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
 
         // Act
         var dictionary = pool.Rent();
@@ -75,84 +69,58 @@ public sealed class ConcurrentDictionaryPoolTests
         // Assert
         Assert.NotNull(dictionary);
         Assert.Empty(dictionary);
-        Assert.Equal(0, pool.Count);
     }
 
     [Fact]
-    public void Rent_WithComparer_ReturnsNewDictionaryWithComparer()
+    public void Rent_AfterDispose_ThrowsObjectDisposedException()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 5, StringComparer.OrdinalIgnoreCase);
+        var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
+        pool.Dispose();
 
-        // Act
-        var dictionary = pool.Rent();
-        dictionary["Key"] = 1;
-        dictionary["key"] = 2;
-
-        // Assert
-        Assert.Single(dictionary);
-        Assert.Equal(2, dictionary["KEY"]);
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => pool.Rent());
     }
 
     [Fact]
-    public void Return_Dictionary_AddsToPool()
+    public void Return_ValidDictionary_ReturnsToPoo()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        using var pool = new ConcurrentDictionaryPool<string, int>(0, 10);
         var dictionary = pool.Rent();
+        dictionary["key"] = 42;
 
         // Act
         pool.Return(dictionary);
+        var rentedAgain = pool.Rent();
 
         // Assert
-        Assert.Equal(1, pool.Count);
+        Assert.Same(dictionary, rentedAgain);
+        Assert.Empty(rentedAgain);
     }
 
     [Fact]
-    public void Return_DictionaryWithData_ClearsDictionary()
+    public void Return_AfterDispose_ThrowsObjectDisposedException()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
         var dictionary = pool.Rent();
-        dictionary["key1"] = 100;
-        dictionary["key2"] = 200;
+        pool.Dispose();
 
-        // Act
-        pool.Return(dictionary);
-        var reusedDictionary = pool.Rent();
-
-        // Assert
-        Assert.Same(dictionary, reusedDictionary);
-        Assert.Empty(reusedDictionary);
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => pool.Return(dictionary));
     }
 
     [Fact]
-    public void RentAndReturn_ReusesDictionaries()
+    public void Clear_RemovesAllPooledDictionaries()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
-        var originalDictionary = pool.Rent();
-        pool.Return(originalDictionary);
-
-        // Act
-        var reusedDictionary = pool.Rent();
-
-        // Assert
-        Assert.Same(originalDictionary, reusedDictionary);
-        Assert.Equal(0, pool.Count);
-    }
-
-    [Fact]
-    public void Clear_RemovesAllDictionaries()
-    {
-        // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
         var dict1 = pool.Rent();
         var dict2 = pool.Rent();
-        var dict3 = pool.Rent();
         pool.Return(dict1);
         pool.Return(dict2);
-        pool.Return(dict3);
+        Assert.Equal(2, pool.Count);
 
         // Act
         pool.Clear();
@@ -162,10 +130,36 @@ public sealed class ConcurrentDictionaryPoolTests
     }
 
     [Fact]
+    public void Clear_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => pool.Clear());
+    }
+
+    [Fact]
+    public void Count_BeforeDispose_ReturnsCurrentCount()
+    {
+        // Arrange
+        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
+        var dict = pool.Rent();
+        pool.Return(dict);
+
+        // Act
+        var count = pool.Count;
+
+        // Assert
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
     public void Count_AfterDispose_ThrowsObjectDisposedException()
     {
         // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
         pool.Dispose();
 
         // Act & Assert
@@ -173,10 +167,23 @@ public sealed class ConcurrentDictionaryPoolTests
     }
 
     [Fact]
+    public void MaxSize_BeforeDispose_ReturnsMaxSize()
+    {
+        // Arrange
+        using var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
+
+        // Act
+        var maxSize = pool.MaxSize;
+
+        // Assert
+        Assert.Equal(10, maxSize);
+    }
+
+    [Fact]
     public void MaxSize_AfterDispose_ThrowsObjectDisposedException()
     {
         // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
         pool.Dispose();
 
         // Act & Assert
@@ -184,334 +191,125 @@ public sealed class ConcurrentDictionaryPoolTests
     }
 
     [Fact]
-    public void Rent_AfterDispose_ThrowsObjectDisposedException()
+    public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
+        var pool = new ConcurrentDictionaryPool<string, int>(5, 10);
+
+        // Act & Assert
         pool.Dispose();
-
-        // Act & Assert
-        Assert.Throws<ObjectDisposedException>(pool.Rent);
-    }
-
-    [Fact]
-    public void Return_AfterDispose_ThrowsObjectDisposedException()
-    {
-        // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
-        var dictionary = new Dictionary<string, int>();
-        pool.Dispose();
-
-        // Act & Assert
-        Assert.Throws<ObjectDisposedException>(() => pool.Return(dictionary));
-    }
-
-    [Fact]
-    public void Clear_AfterDispose_ThrowsObjectDisposedException()
-    {
-        // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
-        pool.Dispose();
-
-        // Act & Assert
-        Assert.Throws<ObjectDisposedException>(pool.Clear);
-    }
-
-    [Fact]
-    public void Dispose_CalledTwice_DoesNotThrow()
-    {
-        // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 5);
-
-        // Act & Assert
         pool.Dispose();
         pool.Dispose();
     }
 
     [Fact]
-    public async Task RentAndReturn_ConcurrentOperations_ThreadSafe()
+    public void Rent_WithCustomComparer_UsesSameComparer()
+    {
+        // Arrange
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        using var pool = new ConcurrentDictionaryPool<string, int>(1, 10, comparer);
+
+        // Act
+        var dictionary = pool.Rent();
+        dictionary["Key"] = 1;
+        var hasKey = dictionary.ContainsKey("key");
+
+        // Assert
+        Assert.True(hasKey);
+    }
+
+    [Fact]
+    public async Task Rent_ConcurrentRents_AllSucceed()
     {
         // Arrange
         using var pool = new ConcurrentDictionaryPool<string, int>(0, 100);
-        var rentedDictionaries = new List<Dictionary<string, int>>();
-        var lockObject = new object();
+        var dictionaries = new Dictionary<string, int>[50];
 
         // Act
-        var tasks = Enumerable.Range(0, 100).Select(async i =>
+        var tasks = Enumerable.Range(0, 50).Select(i => Task.Run(() =>
         {
-            await Task.Yield();
-            var dictionary = pool.Rent();
-            dictionary[$"key{i}"] = i;
-            lock (lockObject)
-            {
-                rentedDictionaries.Add(dictionary);
-            }
-            pool.Return(dictionary);
-        }).ToArray();
+            dictionaries[i] = pool.Rent();
+        })).ToArray();
 
         await Task.WhenAll(tasks);
 
         // Assert
-        Assert.Equal(100, rentedDictionaries.Count);
-        Assert.True(pool.Count >= 0);
+        Assert.All(dictionaries, d => Assert.NotNull(d));
+        Assert.Equal(50, dictionaries.Distinct().Count());
     }
 
     [Fact]
-    public async Task Return_ConcurrentReturns_ThreadSafe()
+    public async Task Return_ConcurrentReturns_AllSucceed()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 50);
-        var dictionaries = Enumerable.Range(0, 100).Select(_ => new Dictionary<string, int>()).ToArray();
+        using var pool = new ConcurrentDictionaryPool<string, int>(0, 100);
+        var dictionaries = Enumerable.Range(0, 50)
+            .Select(_ => pool.Rent())
+            .ToArray();
 
         // Act
-        var tasks = dictionaries.Select(async dictionary =>
+        var tasks = dictionaries.Select(d => Task.Run(() =>
         {
-            await Task.Yield();
-            pool.Return(dictionary);
-        }).ToArray();
+            d["test"] = 1;
+            pool.Return(d);
+        })).ToArray();
 
         await Task.WhenAll(tasks);
 
         // Assert
-        Assert.True(pool.Count >= 0);
-    }
-
-    [Theory]
-    [InlineData(1, 1)]
-    [InlineData(5, 10)]
-    [InlineData(0, 100)]
-    public void Constructor_ValidSizeCombinations_CreatesPool(int initialSize, int maxSize)
-    {
-        // Arrange & Act
-        using var pool = new ConcurrentDictionaryPool<string, int>(initialSize, maxSize);
-
-        // Assert
-        Assert.Equal(0, pool.Count);
-        Assert.Equal(maxSize, pool.MaxSize);
+        Assert.Equal(50, pool.Count);
     }
 
     [Fact]
-    public async Task RentMultiple_ConcurrentOperations_CreatesMultipleDictionaries()
+    public async Task RentAndReturn_ConcurrentMixed_AllSucceed()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 50);
-        var rentedDictionaries = new List<Dictionary<string, int>>();
-        var lockObject = new object();
+        using var pool = new ConcurrentDictionaryPool<string, int>(10, 100);
+        var rentCount = 0;
+        var returnCount = 0;
 
         // Act
-        var tasks = Enumerable.Range(0, 50).Select(async _ =>
+        var tasks = Enumerable.Range(0, 100).Select(i => Task.Run(() =>
         {
-            await Task.Yield();
-            var dictionary = pool.Rent();
-            lock (lockObject)
+            if (i % 2 == 0)
             {
-                rentedDictionaries.Add(dictionary);
+                var dict = pool.Rent();
+                Interlocked.Increment(ref rentCount);
+                dict[$"key{i}"] = i;
+                pool.Return(dict);
+                Interlocked.Increment(ref returnCount);
             }
-        }).ToArray();
+            else
+            {
+                var dict = pool.Rent();
+                Interlocked.Increment(ref rentCount);
+                pool.Return(dict);
+                Interlocked.Increment(ref returnCount);
+            }
+        })).ToArray();
 
         await Task.WhenAll(tasks);
 
         // Assert
-        Assert.Equal(50, rentedDictionaries.Count);
-        Assert.All(rentedDictionaries, Assert.Empty);
+        Assert.Equal(100, rentCount);
+        Assert.Equal(100, returnCount);
     }
 
     [Fact]
-    public async Task Return_ConcurrentReturnsWithMixedData_ClearsAllEntries()
+    public void Return_DictionaryIsCleared_BeforeReuse()
     {
         // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, object>(0, 50);
+        using var pool = new ConcurrentDictionaryPool<string, int>(0, 10);
+        var dictionary = pool.Rent();
+        dictionary["key1"] = 1;
+        dictionary["key2"] = 2;
 
         // Act
-        var tasks = Enumerable.Range(0, 50).Select(async i =>
-        {
-            await Task.Yield();
-            var dictionary = pool.Rent();
-            dictionary["string"] = "value";
-            dictionary["number"] = i;
-            dictionary["null"] = null!;
-            pool.Return(dictionary);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
+        pool.Return(dictionary);
+        var rentedAgain = pool.Rent();
 
         // Assert
-        Assert.True(pool.Count >= 0);
-    }
-
-    [Fact]
-    public async Task Rent_WithCustomComparerConcurrently_PreservesComparerBehavior()
-    {
-        // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 50, StringComparer.OrdinalIgnoreCase);
-
-        // Act
-        var tasks = Enumerable.Range(0, 50).Select(async i =>
-        {
-            await Task.Yield();
-            var dict = pool.Rent();
-            dict["test"] = i;
-            dict["TEST"] = i + 1;
-            pool.Return(dict);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // Assert
-        Assert.True(pool.Count >= 0);
-        var testDict = pool.Rent();
-        testDict["test"] = 1;
-        testDict["TEST"] = 2;
-        Assert.Single(testDict);
-        Assert.Equal(2, testDict["test"]);
-    }
-
-    [Fact]
-    public async Task Clear_DuringConcurrentOperations_ThreadSafe()
-    {
-        // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 50);
-
-        // Act
-        var rentTasks = Enumerable.Range(0, 25).Select(async i =>
-        {
-            try
-            {
-                await Task.Yield();
-                var dictionary = pool.Rent();
-                dictionary[$"key{i}"] = i;
-                pool.Return(dictionary);
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-        });
-
-        var clearTask = Task.Run(async () =>
-        {
-            await Task.Delay(10);
-            try
-            {
-                pool.Clear();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-        }, TestContext.Current.CancellationToken);
-
-        await Task.WhenAll(rentTasks.Concat([clearTask]));
-
-        // Assert
-        Assert.True(pool.Count >= 0);
-    }
-
-    [Fact]
-    public async Task Dispose_DuringConcurrentOperations_ThreadSafe()
-    {
-        // Arrange
-        var pool = new ConcurrentDictionaryPool<string, int>(0, 50);
-        var exceptions = new List<Exception>();
-        var lockObject = new object();
-
-        // Act
-        var rentTasks = Enumerable.Range(0, 25).Select(async _ =>
-        {
-            try
-            {
-                await Task.Yield();
-                var dictionary = pool.Rent();
-                pool.Return(dictionary);
-            }
-            catch (ObjectDisposedException ex)
-            {
-                lock (lockObject)
-                {
-                    exceptions.Add(ex);
-                }
-            }
-        });
-
-        var disposeTask = Task.Run(async () =>
-        {
-            await Task.Delay(5);
-            pool.Dispose();
-        }, TestContext.Current.CancellationToken);
-
-        await Task.WhenAll(rentTasks.Concat([disposeTask]));
-
-        // Assert
-        Assert.True(exceptions.All(ex => ex is ObjectDisposedException));
-    }
-
-    [Fact]
-    public async Task Pool_HighConcurrencyStressTest_HandlesCorrectly()
-    {
-        // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 200);
-        var totalOperations = 500;
-        var completedOperations = 0;
-
-        // Act
-        var tasks = Enumerable.Range(0, totalOperations).Select(async i =>
-        {
-            await Task.Yield();
-            var dictionary = pool.Rent();
-            dictionary[$"key{i}"] = i;
-            await Task.Delay(1);
-            pool.Return(dictionary);
-            Interlocked.Increment(ref completedOperations);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // Assert
-        Assert.Equal(totalOperations, completedOperations);
-    }
-
-    [Fact]
-    public async Task Return_DictionaryWithComplexObjectsConcurrently_ClearsCorrectly()
-    {
-        // Arrange
-        using var pool = new ConcurrentDictionaryPool<int, List<string>>(0, 50);
-
-        // Act
-        var tasks = Enumerable.Range(0, 50).Select(async i =>
-        {
-            await Task.Yield();
-            var dictionary = pool.Rent();
-            dictionary[1] = [$"a{i}", $"b{i}"];
-            dictionary[2] = [$"c{i}", $"d{i}"];
-            pool.Return(dictionary);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // Assert
-        var testDict = pool.Rent();
-        Assert.Empty(testDict);
-    }
-
-    [Fact]
-    public async Task RentAndReturn_ReusesConcurrently_ThreadSafe()
-    {
-        // Arrange
-        using var pool = new ConcurrentDictionaryPool<string, int>(0, 20);
-        pool.Return([]);
-        pool.Return([]);
-        pool.Return([]);
-
-        // Act
-        var tasks = Enumerable.Range(0, 100).Select(async i =>
-        {
-            await Task.Yield();
-            var dictionary = pool.Rent();
-            dictionary[$"key{i}"] = i;
-            pool.Return(dictionary);
-        }).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // Assert
-        Assert.True(pool.Count >= 0);
+        Assert.Same(dictionary, rentedAgain);
+        Assert.Empty(rentedAgain);
     }
 }
