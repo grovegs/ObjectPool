@@ -250,7 +250,6 @@ public sealed class ConcurrentListPoolTests
 
         // Assert
         Assert.Empty(list);
-        Assert.Equal(0, list.Count);
 
         pool.Return(list);
     }
@@ -326,9 +325,9 @@ public sealed class ConcurrentListPoolTests
         {
             Thread.Sleep(10);
             pool.Dispose();
-        });
+        }, TestContext.Current.CancellationToken);
 
-        await Task.WhenAll(operationTasks.Concat(new[] { disposeTask }));
+        await Task.WhenAll(operationTasks.Concat([disposeTask]));
 
         // Assert - Some operations may throw ObjectDisposedException, which is expected
         Assert.All(exceptions, ex => Assert.IsType<ObjectDisposedException>(ex));
@@ -342,7 +341,7 @@ public sealed class ConcurrentListPoolTests
         var list = pool.Rent();
 
         // Act
-        list.AddRange(new[] { "zero", "one", "two" });
+        list.AddRange(["zero", "one", "two"]);
         list[1] = "updated";
 
         // Assert

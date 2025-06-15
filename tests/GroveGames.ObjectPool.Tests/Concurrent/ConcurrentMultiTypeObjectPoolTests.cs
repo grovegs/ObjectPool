@@ -440,9 +440,9 @@ public sealed class ConcurrentMultiTypeObjectPoolTests
         {
             Thread.Sleep(10);
             pool.Dispose();
-        });
+        }, TestContext.Current.CancellationToken);
 
-        await Task.WhenAll(operationTasks.Concat(new[] { disposeTask }));
+        await Task.WhenAll(operationTasks.Concat([disposeTask]));
 
         // Assert - Some operations may throw ObjectDisposedException, which is expected
         Assert.All(exceptions, ex => Assert.IsType<ObjectDisposedException>(ex));
