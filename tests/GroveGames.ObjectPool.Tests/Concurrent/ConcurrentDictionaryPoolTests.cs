@@ -479,8 +479,8 @@ public sealed class ConcurrentDictionaryPoolTests
         {
             await Task.Yield();
             var dictionary = pool.Rent();
-            dictionary[1] = new List<string> { $"a{i}", $"b{i}" };
-            dictionary[2] = new List<string> { $"c{i}", $"d{i}" };
+            dictionary[1] = [$"a{i}", $"b{i}"];
+            dictionary[2] = [$"c{i}", $"d{i}"];
             pool.Return(dictionary);
         }).ToArray();
 
@@ -496,9 +496,9 @@ public sealed class ConcurrentDictionaryPoolTests
     {
         // Arrange
         using var pool = new ConcurrentDictionaryPool<string, int>(0, 20);
-        pool.Return(new Dictionary<string, int>());
-        pool.Return(new Dictionary<string, int>());
-        pool.Return(new Dictionary<string, int>());
+        pool.Return([]);
+        pool.Return([]);
+        pool.Return([]);
 
         // Act
         var tasks = Enumerable.Range(0, 100).Select(async i =>
