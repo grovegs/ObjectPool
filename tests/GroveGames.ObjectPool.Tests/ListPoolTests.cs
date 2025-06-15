@@ -233,7 +233,7 @@ public sealed class ListPoolTests
         list.Add(10);
         list.Add(20);
         list.Insert(1, 15);
-        list.AddRange(new[] { 30, 40, 50 });
+        list.AddRange([30, 40, 50]);
 
         // Act
         pool.Return(list);
@@ -298,7 +298,7 @@ public sealed class ListPoolTests
         // Arrange
         using var pool = new ListPool<int>(0, 5);
         var list = pool.Rent();
-        list.AddRange(new[] { 1, 2, 3, 4, 5 });
+        list.AddRange([1, 2, 3, 4, 5]);
         pool.Return(list);
 
         // Act

@@ -399,7 +399,7 @@ public sealed class ConcurrentDictionaryPoolTests
             }
         }, TestContext.Current.CancellationToken);
 
-        await Task.WhenAll(rentTasks.Concat(new[] { clearTask }));
+        await Task.WhenAll(rentTasks.Concat([clearTask]));
 
         // Assert
         Assert.True(pool.Count >= 0);
@@ -437,7 +437,7 @@ public sealed class ConcurrentDictionaryPoolTests
             pool.Dispose();
         }, TestContext.Current.CancellationToken);
 
-        await Task.WhenAll(rentTasks.Concat(new[] { disposeTask }));
+        await Task.WhenAll(rentTasks.Concat([disposeTask]));
 
         // Assert
         Assert.True(exceptions.All(ex => ex is ObjectDisposedException));

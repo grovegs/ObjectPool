@@ -272,7 +272,7 @@ public sealed class HashSetPoolTests
         hashSet.Add(2);
         hashSet.Add(3);
         hashSet.Remove(2);
-        hashSet.UnionWith(new[] { 4, 5, 6 });
+        hashSet.UnionWith([4, 5, 6]);
 
         // Act
         pool.Return(hashSet);
@@ -337,7 +337,7 @@ public sealed class HashSetPoolTests
         // Arrange
         using var pool = new HashSetPool<int>(0, 5);
         var hashSet = pool.Rent();
-        hashSet.UnionWith(new[] { 1, 2, 3, 4, 5 });
+        hashSet.UnionWith([1, 2, 3, 4, 5]);
         pool.Return(hashSet);
 
         // Act
@@ -398,13 +398,13 @@ public sealed class HashSetPoolTests
         // Arrange
         using var pool = new HashSetPool<int>(0, 5);
         var hashSet = pool.Rent();
-        hashSet.UnionWith(new[] { 1, 2, 3 });
+        hashSet.UnionWith([1, 2, 3]);
         pool.Return(hashSet);
 
         // Act
         var reusedHashSet = pool.Rent();
-        reusedHashSet.UnionWith(new[] { 10, 20 });
-        reusedHashSet.IntersectWith(new[] { 10, 30 });
+        reusedHashSet.UnionWith([10, 20]);
+        reusedHashSet.IntersectWith([10, 30]);
 
         // Assert
         Assert.Same(hashSet, reusedHashSet);
@@ -477,13 +477,13 @@ public sealed class HashSetPoolTests
         // Arrange
         using var pool = new HashSetPool<int>(0, 5);
         var hashSet = pool.Rent();
-        hashSet.UnionWith(new[] { 1, 2, 3, 4, 5 });
+        hashSet.UnionWith([1, 2, 3, 4, 5]);
         pool.Return(hashSet);
 
         // Act
         var reusedHashSet = pool.Rent();
-        reusedHashSet.UnionWith(new[] { 10, 20, 30 });
-        reusedHashSet.ExceptWith(new[] { 20 });
+        reusedHashSet.UnionWith([10, 20, 30]);
+        reusedHashSet.ExceptWith([20]);
 
         // Assert
         Assert.Same(hashSet, reusedHashSet);
@@ -499,13 +499,13 @@ public sealed class HashSetPoolTests
         // Arrange
         using var pool = new HashSetPool<int>(0, 5);
         var hashSet = pool.Rent();
-        hashSet.UnionWith(new[] { 1, 2, 3 });
+        hashSet.UnionWith([1, 2, 3]);
         pool.Return(hashSet);
 
         // Act
         var reusedHashSet = pool.Rent();
-        reusedHashSet.UnionWith(new[] { 10, 20 });
-        reusedHashSet.SymmetricExceptWith(new[] { 20, 30 });
+        reusedHashSet.UnionWith([10, 20]);
+        reusedHashSet.SymmetricExceptWith([20, 30]);
 
         // Assert
         Assert.Same(hashSet, reusedHashSet);
@@ -521,13 +521,13 @@ public sealed class HashSetPoolTests
         // Arrange
         using var pool = new HashSetPool<int>(0, 5);
         var hashSet = pool.Rent();
-        hashSet.UnionWith(new[] { 1, 2, 3, 4, 5 });
+        hashSet.UnionWith([1, 2, 3, 4, 5]);
         pool.Return(hashSet);
 
         // Act
         var reusedHashSet = pool.Rent();
-        reusedHashSet.UnionWith(new[] { 10, 20 });
-        var isSubset = reusedHashSet.IsSubsetOf(new[] { 10, 20, 30 });
+        reusedHashSet.UnionWith([10, 20]);
+        var isSubset = reusedHashSet.IsSubsetOf([10, 20, 30]);
 
         // Assert
         Assert.Same(hashSet, reusedHashSet);

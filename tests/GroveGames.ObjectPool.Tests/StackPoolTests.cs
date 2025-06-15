@@ -482,8 +482,8 @@ public sealed class StackPoolTests
 
         // Assert
         Assert.Same(stack, reusedStack);
-        Assert.Equal(new[] { 20, 10 }, array);
-        Assert.Equal(new[] { 200, 100 }, newArray);
+        Assert.Equal([20, 10], array);
+        Assert.Equal([200, 100], newArray);
     }
 
     [Fact]
