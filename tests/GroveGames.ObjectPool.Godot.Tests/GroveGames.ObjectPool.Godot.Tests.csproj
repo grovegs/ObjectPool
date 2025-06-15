@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
-    <RootNamespace>$(RootNamespace).Tests</RootNamespace>
+    <RootNamespace>$(RootNamespace).Godot.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
