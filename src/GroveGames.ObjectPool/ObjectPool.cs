@@ -2,56 +2,74 @@ namespace GroveGames.ObjectPool;
 
 public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 {
-    private readonly Stack<T> _pool;
-    private readonly IPooledObjectStrategy<T> _pooledObjectStrategy;
+    private readonly Queue<T> _items;
+    private readonly Func<T> _factory;
+    private readonly Action<T>? _onRent;
+    private readonly Action<T>? _onReturn;
+    private readonly int _maxSize;
+    private bool _disposed;
 
-    public ObjectPool(int size, IPooledObjectStrategy<T> pooledObjectStrategy)
+    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _items.Count;
+    public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _maxSize;
+
+    public ObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
     {
-        _pool = new Stack<T>(size);
-        _pooledObjectStrategy = pooledObjectStrategy;
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+
+        _items = new Queue<T>(initialSize);
+        _factory = factory;
+        _onRent = onRent;
+        _onReturn = onReturn;
+        _maxSize = maxSize;
+        _disposed = false;
     }
 
-    private T GetOrCreate()
+    public T Rent()
     {
-        if (!_pool.TryPop(out var pooledObject))
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var item = _items.TryDequeue(out var pooledItem) ? pooledItem : _factory();
+        _onRent?.Invoke(item);
+        return item;
+    }
+
+    public void Return(T item)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _onReturn?.Invoke(item);
+
+        if (_items.Count < _maxSize)
         {
-            pooledObject = _pooledObjectStrategy.Create();
+            _items.Enqueue(item);
         }
-
-        return pooledObject;
     }
 
-    public T Get()
+    public void Clear()
     {
-        var pooledObject = GetOrCreate();
-        _pooledObjectStrategy.Get(pooledObject);
-        return pooledObject;
-    }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-    public IDisposable Get(out T pooledObject)
-    {
-        pooledObject = Get();
-        return new DisposablePooledObject<T>(Return, pooledObject);
-    }
-
-    public void Return(T pooledObject)
-    {
-        _pooledObjectStrategy.Return(pooledObject);
-        _pool.Push(pooledObject);
+        _items.Clear();
     }
 
     public void Dispose()
     {
-        foreach (var item in _pool)
+        if (_disposed)
         {
-            if (item is not IDisposable disposable)
-            {
-                continue;
-            }
-
-            disposable.Dispose();
+            return;
         }
 
-        _pool.Clear();
+        _disposed = true;
+
+        while (_items.TryDequeue(out var item))
+        {
+            if (item is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
     }
 }

@@ -1,131 +1,287 @@
 namespace GroveGames.ObjectPool.Tests;
 
-public class ObjectPoolTests
+public sealed class ObjectPoolTests
 {
-    public class TestObject { }
-
-    public class DisposableTestObject : IDisposable
+    private sealed class TestDisposable : IDisposable
     {
-        private readonly IDisposable _disposable;
-
-        public DisposableTestObject(IDisposable disposable)
-        {
-            _disposable = disposable;
-        }
+        public bool IsDisposed { get; private set; }
 
         public void Dispose()
         {
-            _disposable.Dispose();
+            IsDisposed = true;
         }
     }
 
     [Fact]
-    public void Get_ShouldCreateNewObject_WhenPoolIsEmpty()
+    public void Constructor_ValidParameters_CreatesPool()
     {
-        // Arrange
-        var strategyMock = new Mock<IPooledObjectStrategy<TestObject>>();
-        var testObject = new TestObject();
-        strategyMock.Setup(s => s.Create()).Returns(testObject);
-        var pool = new ObjectPool<TestObject>(size: 2, strategyMock.Object);
-
-        // Act
-        var result = pool.Get();
+        // Arrange & Act
+        using var pool = new ObjectPool<string>(() => "test", null, null, 5, 10);
 
         // Assert
-        Assert.Same(testObject, result);
-        strategyMock.Verify(s => s.Create(), Times.Once);
-        strategyMock.Verify(s => s.Get(testObject), Times.Once);
+        Assert.Equal(0, pool.Count);
+        Assert.Equal(10, pool.MaxSize);
     }
 
     [Fact]
-    public void Return_ShouldPushObjectBackToPool()
+    public void Constructor_NullFactory_ThrowsArgumentNullException()
     {
-        // Arrange
-        var strategyMock = new Mock<IPooledObjectStrategy<TestObject>>();
-        var testObject = new TestObject();
+        // Arrange & Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new ObjectPool<string>(null!, null, null, 5, 10));
+    }
 
-        var pool = new ObjectPool<TestObject>(size: 2, strategyMock.Object);
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-5)]
+    public void Constructor_NegativeInitialSize_ThrowsArgumentOutOfRangeException(int initialSize)
+    {
+        // Arrange & Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ObjectPool<string>(() => "test", null, null, initialSize, 10));
+    }
 
-        // Act
-        pool.Return(testObject);
-        var result = pool.Get();
-
-        // Assert
-        Assert.Same(testObject, result);
-        strategyMock.Verify(s => s.Return(testObject), Times.Once);
-        strategyMock.Verify(s => s.Get(testObject), Times.Once);
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-5)]
+    public void Constructor_NonPositiveMaxSize_ThrowsArgumentOutOfRangeException(int maxSize)
+    {
+        // Arrange & Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ObjectPool<string>(() => "test", null, null, 5, maxSize));
     }
 
     [Fact]
-    public void Dispose_ShouldCallDisposeOnIDisposableObjects()
+    public void Constructor_InitialSizeGreaterThanMaxSize_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange & Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ObjectPool<string>(() => "test", null, null, 15, 10));
+    }
+
+    [Fact]
+    public void Rent_EmptyPool_CreatesNewItem()
     {
         // Arrange
-        var disposableMock = new Mock<IDisposable>();
-        var disposableObject = new DisposableTestObject(disposableMock.Object);
-        var strategyMock = new Mock<IPooledObjectStrategy<DisposableTestObject>>();
-        strategyMock.Setup(s => s.Create()).Returns(disposableObject);
-        var pool = new ObjectPool<DisposableTestObject>(size: 2, strategyMock.Object);
-        pool.Return(disposableObject);
+        using var pool = new ObjectPool<string>(() => "created", null, null, 0, 5);
+
+        // Act
+        var item = pool.Rent();
+
+        // Assert
+        Assert.Equal("created", item);
+        Assert.Equal(0, pool.Count);
+    }
+
+    [Fact]
+    public void Rent_WithOnRentCallback_InvokesCallback()
+    {
+        // Arrange
+        var rentedItems = new List<string>();
+        using var pool = new ObjectPool<string>(() => "test", rentedItems.Add, null, 0, 5);
+
+        // Act
+        var item = pool.Rent();
+
+        // Assert
+        Assert.Single(rentedItems);
+        Assert.Equal("test", rentedItems[0]);
+    }
+
+    [Fact]
+    public void Return_ItemToPool_AddsToPool()
+    {
+        // Arrange
+        using var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        var item = pool.Rent();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Equal(1, pool.Count);
+    }
+
+    [Fact]
+    public void Return_WithOnReturnCallback_InvokesCallback()
+    {
+        // Arrange
+        var returnedItems = new List<string>();
+        using var pool = new ObjectPool<string>(() => "test", null, returnedItems.Add, 0, 5);
+        var item = pool.Rent();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Single(returnedItems);
+        Assert.Equal("test", returnedItems[0]);
+    }
+
+    [Fact]
+    public void Return_PoolAtMaxSize_DoesNotAddToPool()
+    {
+        // Arrange
+        using var pool = new ObjectPool<string>(() => "test", null, null, 0, 2);
+        pool.Return("item1");
+        pool.Return("item2");
+
+        // Act
+        pool.Return("item3");
+
+        // Assert
+        Assert.Equal(2, pool.Count);
+    }
+
+    [Fact]
+    public void RentAndReturn_ReusesPooledItems()
+    {
+        // Arrange
+        using var pool = new ObjectPool<string>(() => "new", null, null, 0, 5);
+        var originalItem = "pooled";
+        pool.Return(originalItem);
+
+        // Act
+        var rentedItem = pool.Rent();
+
+        // Assert
+        Assert.Equal("pooled", rentedItem);
+        Assert.Equal(0, pool.Count);
+    }
+
+    [Fact]
+    public void Clear_RemovesAllItems()
+    {
+        // Arrange
+        using var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        pool.Return("item1");
+        pool.Return("item2");
+        pool.Return("item3");
+
+        // Act
+        pool.Clear();
+
+        // Assert
+        Assert.Equal(0, pool.Count);
+    }
+
+    [Fact]
+    public void Count_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => pool.Count);
+    }
+
+    [Fact]
+    public void MaxSize_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => pool.MaxSize);
+    }
+
+    [Fact]
+    public void Rent_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(pool.Rent);
+    }
+
+    [Fact]
+    public void Return_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => pool.Return("test"));
+    }
+
+    [Fact]
+    public void Clear_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(pool.Clear);
+    }
+
+    [Fact]
+    public void Dispose_CalledTwice_DoesNotThrow()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 0, 5);
+
+        // Act & Assert
+        pool.Dispose();
+        pool.Dispose(); // Should not throw
+    }
+
+    [Fact]
+    public void Dispose_WithDisposableItems_DisposesItems()
+    {
+        // Arrange
+        var disposableItems = new List<TestDisposable>();
+        using var pool = new ObjectPool<TestDisposable>(() => new TestDisposable(), null, null, 0, 5);
+
+        for (int i = 0; i < 3; i++)
+        {
+            var item = new TestDisposable();
+            disposableItems.Add(item);
+            pool.Return(item);
+        }
 
         // Act
         pool.Dispose();
 
         // Assert
-        disposableMock.Verify(d => d.Dispose(), Times.Once);
+        Assert.All(disposableItems, item => Assert.True(item.IsDisposed));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(5, 10)]
+    [InlineData(0, 100)]
+    public void Constructor_ValidSizeCombinations_CreatesPool(int initialSize, int maxSize)
+    {
+        // Arrange & Act
+        using var pool = new ObjectPool<string>(() => "test", null, null, initialSize, maxSize);
+
+        // Assert
+        Assert.Equal(0, pool.Count);
+        Assert.Equal(maxSize, pool.MaxSize);
     }
 
     [Fact]
-    public void Dispose_ShouldClearPool()
+    public void RentMultiple_EmptyPool_CreatesMultipleItems()
     {
         // Arrange
-        var strategyMock = new Mock<IPooledObjectStrategy<TestObject>>();
-        var testObject = new TestObject();
-
-        var pool = new ObjectPool<TestObject>(size: 2, strategyMock.Object);
-        pool.Return(testObject);
+        var createdCount = 0;
+        using var pool = new ObjectPool<string>(() => $"item{++createdCount}", null, null, 0, 5);
 
         // Act
-        pool.Dispose();
+        var item1 = pool.Rent();
+        var item2 = pool.Rent();
+        var item3 = pool.Rent();
 
         // Assert
-        var result = pool.Get();
-        Assert.Null(result);
-        strategyMock.Verify(s => s.Create(), Times.Once);
-    }
-
-    [Fact]
-    public void Dispose_ShouldBeSafe_WhenCalledMultipleTimes()
-    {
-        // Arrange
-        var disposableMock = new Mock<IDisposable>();
-        var disposableObject = new DisposableTestObject(disposableMock.Object);
-        var strategyMock = new Mock<IPooledObjectStrategy<DisposableTestObject>>();
-        strategyMock.Setup(s => s.Create()).Returns(disposableObject);
-        var pool = new ObjectPool<DisposableTestObject>(size: 2, strategyMock.Object);
-        pool.Return(disposableObject);
-
-        // Act
-        pool.Dispose();
-        pool.Dispose();
-
-        // Assert
-        disposableMock.Verify(d => d.Dispose(), Times.Once);
-    }
-
-    [Fact]
-    public void Dispose_ShouldHandleNonIDisposableObjectsGracefully()
-    {
-        // Arrange
-        var strategyMock = new Mock<IPooledObjectStrategy<TestObject>>();
-        var testObject = new TestObject();
-        strategyMock.Setup(s => s.Create()).Returns(testObject);
-        var pool = new ObjectPool<TestObject>(size: 2, strategyMock.Object);
-        pool.Return(testObject);
-
-        // Act
-        pool.Dispose();
-
-        // Assert
-        Assert.True(true);
+        Assert.Equal("item1", item1);
+        Assert.Equal("item2", item2);
+        Assert.Equal("item3", item3);
+        Assert.Equal(0, pool.Count);
     }
 }
