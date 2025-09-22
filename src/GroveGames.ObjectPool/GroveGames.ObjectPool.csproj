@@ -26,8 +26,7 @@
         </PackageReference>
     </ItemGroup>
 
-    <ItemGroup
-        Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
-        <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+    <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+        <PackageReference Include="System.Collections.Immutable" Version="9.0.9" />
     </ItemGroup>
 </Project>
