@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>$(RootNamespace).Godot</RootNamespace>
-    <PackageId>$(PackageId).Godot</PackageId>
     <PackageTags>$(PackageTags);godot</PackageTags>
 
     <PublishAot>true</PublishAot>
