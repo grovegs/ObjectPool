@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Threading;
+
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T> where T : notnull
@@ -5,14 +8,29 @@ public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T> where T : notnull
     private readonly ConcurrentObjectPool<HashSet<T>> _pool;
     private volatile int _disposed;
 
-    public int Count => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentHashSetPool<T>)) : _pool.Count;
-    public int MaxSize => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentHashSetPool<T>)) : _pool.MaxSize;
+    public int Count
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _pool.Count;
+        }
+    }
+
+    public int MaxSize
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _pool.MaxSize;
+        }
+    }
 
     public ConcurrentHashSetPool(int initialSize, int maxSize, IEqualityComparer<T>? comparer = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ThrowHelper.ThrowIfNegative(initialSize);
+        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
+        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<HashSet<T>>(
             () => new HashSet<T>(comparer),
@@ -25,21 +43,21 @@ public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T> where T : notnull
 
     public HashSet<T> Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(HashSet<T> hashSet)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _pool.Return(hashSet);
     }
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _pool.Clear();
     }

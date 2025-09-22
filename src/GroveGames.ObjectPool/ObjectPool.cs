@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace GroveGames.ObjectPool;
 
 public sealed class ObjectPool<T> : IObjectPool<T> where T : class
@@ -9,15 +12,30 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     private readonly int _maxSize;
     private bool _disposed;
 
-    public int Count => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _items.Count;
-    public int MaxSize => _disposed ? throw new ObjectDisposedException(nameof(ObjectPool<T>)) : _maxSize;
+    public int Count
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            return _items.Count;
+        }
+    }
+
+    public int MaxSize
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            return _maxSize;
+        }
+    }
 
     public ObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
     {
-        ArgumentNullException.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ThrowHelper.ThrowIfNull(factory);
+        ThrowHelper.ThrowIfNegative(initialSize);
+        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
+        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
 
         _items = new Queue<T>(initialSize);
         _factory = factory;
@@ -29,7 +47,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public T Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIfDisposed(_disposed, this);
 
         var item = _items.TryDequeue(out var pooledItem) ? pooledItem : _factory();
         _onRent?.Invoke(item);
@@ -38,7 +56,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public void Return(T item)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIfDisposed(_disposed, this);
 
         _onReturn?.Invoke(item);
 
@@ -50,7 +68,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIfDisposed(_disposed, this);
 
         _items.Clear();
     }

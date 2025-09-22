@@ -1,3 +1,5 @@
+using System;
+
 namespace GroveGames.ObjectPool;
 
 public interface IArrayPool<T> : IDisposable where T : notnull

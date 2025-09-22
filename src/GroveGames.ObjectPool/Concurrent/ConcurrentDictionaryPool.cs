@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Threading;
+
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKey, TValue> where TKey : notnull
@@ -5,14 +8,29 @@ public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKe
     private readonly ConcurrentObjectPool<Dictionary<TKey, TValue>> _pool;
     private volatile int _disposed;
 
-    public int Count => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentDictionaryPool<TKey, TValue>)) : _pool.Count;
-    public int MaxSize => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentDictionaryPool<TKey, TValue>)) : _pool.MaxSize;
+    public int Count
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _pool.Count;
+        }
+    }
+
+    public int MaxSize
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _pool.MaxSize;
+        }
+    }
 
     public ConcurrentDictionaryPool(int initialSize, int maxSize, IEqualityComparer<TKey>? comparer = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ThrowHelper.ThrowIfNegative(initialSize);
+        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
+        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<Dictionary<TKey, TValue>>(
             () => new Dictionary<TKey, TValue>(comparer),
@@ -25,21 +43,21 @@ public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKe
 
     public Dictionary<TKey, TValue> Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(Dictionary<TKey, TValue> dictionary)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _pool.Return(dictionary);
     }
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _pool.Clear();
     }

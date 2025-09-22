@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Frozen;
+using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
@@ -9,7 +11,7 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
 
     public ConcurrentMultiTypeObjectPool(Action<ConcurrentMultiTypeObjectPoolBuilder<TBase>> configure)
     {
-        ArgumentNullException.ThrowIfNull(configure);
+        ThrowHelper.ThrowIfNull(configure);
 
         var builder = new ConcurrentMultiTypeObjectPoolBuilder<TBase>();
         configure(builder);
@@ -19,7 +21,7 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
 
     public int Count<TDerived>() where TDerived : class, TBase
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         var type = typeof(TDerived);
         return _poolsByType.TryGetValue(type, out var pool) ? pool.Count : 0;
@@ -27,7 +29,7 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
 
     public int MaxSize<TDerived>() where TDerived : class, TBase
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         var type = typeof(TDerived);
         return _poolsByType.TryGetValue(type, out var pool) ? pool.MaxSize : 0;
@@ -35,7 +37,7 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
 
     public TBase Rent<TDerived>() where TDerived : class, TBase
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         var type = typeof(TDerived);
         return _poolsByType.TryGetValue(type, out var pool) ? pool.Rent() : throw new InvalidOperationException($"Type {typeof(TDerived).Name} is not registered.");
@@ -43,7 +45,7 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
 
     public void Return<TDerived>(TDerived item) where TDerived : class, TBase
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         var type = typeof(TDerived);
 
@@ -55,7 +57,7 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         foreach (var pool in _poolsByType.Values)
         {

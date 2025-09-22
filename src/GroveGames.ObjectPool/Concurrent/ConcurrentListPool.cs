@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Threading;
+
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
@@ -5,14 +8,29 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
     private readonly ConcurrentObjectPool<List<T>> _pool;
     private volatile int _disposed;
 
-    public int Count => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentListPool<T>)) : _pool.Count;
-    public int MaxSize => _disposed == 1 ? throw new ObjectDisposedException(nameof(ConcurrentListPool<T>)) : _pool.MaxSize;
+    public int Count
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _pool.Count;
+        }
+    }
+
+    public int MaxSize
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _pool.MaxSize;
+        }
+    }
 
     public ConcurrentListPool(int initialSize, int maxSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ThrowHelper.ThrowIfNegative(initialSize);
+        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
+        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<List<T>>(
             static () => [],
@@ -25,21 +43,21 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
 
     public List<T> Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(List<T> list)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _pool.Return(list);
     }
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _pool.Clear();
     }

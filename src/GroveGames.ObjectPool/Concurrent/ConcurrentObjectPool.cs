@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
@@ -13,17 +15,27 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     private volatile int _count;
     private volatile int _disposed;
 
-    public int Count => _disposed == 1
-        ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>))
-        : _count;
+    public int Count
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _count;
+        }
+    }
 
-    public int MaxSize => _disposed == 1
-        ? throw new ObjectDisposedException(nameof(ConcurrentObjectPool<T>))
-        : _maxSize;
+    public int MaxSize
+    {
+        get
+        {
+            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            return _maxSize;
+        }
+    }
 
     public ConcurrentObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        ThrowHelper.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
@@ -40,7 +52,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public T Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         if (_items.TryDequeue(out var pooledItem))
         {
@@ -56,7 +68,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public void Return(T item)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _onReturn?.Invoke(item);
 
@@ -72,7 +84,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
 
         _items.Clear();
         Interlocked.Exchange(ref _count, 0);
