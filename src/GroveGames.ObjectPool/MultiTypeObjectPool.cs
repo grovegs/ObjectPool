@@ -1,11 +1,11 @@
 using System;
-using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
 
 public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> where TBase : class
 {
-    private readonly FrozenDictionary<Type, IObjectPool<TBase>> _poolsByType;
+    private readonly IReadOnlyDictionary<Type, IObjectPool<TBase>> _poolsByType;
     private bool _disposed;
 
     public MultiTypeObjectPool(Action<MultiTypeObjectPoolBuilder<TBase>> configure)

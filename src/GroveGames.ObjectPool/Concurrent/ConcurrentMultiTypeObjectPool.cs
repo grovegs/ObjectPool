@@ -1,12 +1,12 @@
 using System;
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> where TBase : class
 {
-    private readonly FrozenDictionary<Type, IObjectPool<TBase>> _poolsByType;
+    private readonly IReadOnlyDictionary<Type, IObjectPool<TBase>> _poolsByType;
     private volatile int _disposed;
 
     public ConcurrentMultiTypeObjectPool(Action<ConcurrentMultiTypeObjectPoolBuilder<TBase>> configure)

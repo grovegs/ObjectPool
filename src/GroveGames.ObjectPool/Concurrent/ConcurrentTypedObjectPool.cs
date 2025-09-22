@@ -29,9 +29,9 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
     public ConcurrentTypedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
     {
         ThrowHelper.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ThrowHelper.ThrowIfNegative(initialSize);
+        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
+        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         _disposed = 0;
