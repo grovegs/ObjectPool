@@ -1,6 +1,0 @@
-<Project>
-  <Target Name="BuildPlugin" AfterTargets="Build">
-    <Message Text="Building GroveGames.ObjectPool.dll..." Importance="high" />
-    <Exec Command="dotnet build ../../src/GroveGames.ObjectPool/GroveGames.ObjectPool.csproj -c $(Configuration) -f netstandard2.1 -o ./Assets/Plugins" />
-  </Target>
-</Project>
