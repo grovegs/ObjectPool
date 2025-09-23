@@ -19,7 +19,7 @@
     <ProjectReference Include="..\..\src\GroveGames.ObjectPool\GroveGames.ObjectPool.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="Exists('xunit.runner.json')">
     <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
