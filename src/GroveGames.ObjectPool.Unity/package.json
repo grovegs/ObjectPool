@@ -1,0 +1,18 @@
+{
+  "name": "com.grovegames.objectpool",
+  "version": "0.0.0",
+  "displayName": "GroveGames.ObjectPool",
+  "description": "High-performance object pooling library for .NET, Unity, and Godot with Native AOT support.",
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/grovegs/ObjectPool",
+  "changelogUrl": "https://github.com/grovegs/ObjectPool/releases",
+  "licensesUrl": "https://github.com/grovegs/ObjectPool/blob/main/LICENSE",
+  "keywords": [
+    "object-pool",
+    "performance"
+  ],
+  "author": {
+    "name": "Grove Games",
+    "url": "https://github.com/grovegs"
+  }
+}
