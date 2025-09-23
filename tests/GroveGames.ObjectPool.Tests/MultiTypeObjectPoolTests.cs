@@ -1,3 +1,5 @@
+using System;
+
 namespace GroveGames.ObjectPool.Tests;
 
 public sealed class MultiTypeObjectPoolTests

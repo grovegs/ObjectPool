@@ -1,3 +1,5 @@
+using System;
+
 namespace GroveGames.ObjectPool;
 
 public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
@@ -10,10 +12,10 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
 
     public TypedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
     {
-        ArgumentNullException.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ThrowHelper.ThrowIfNull(factory);
+        ThrowHelper.ThrowIfNegative(initialSize);
+        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
+        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ObjectPool<TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         _disposed = false;
@@ -21,14 +23,14 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
 
     public TBase Rent()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIfDisposed(_disposed, this);
 
         return _pool.Rent();
     }
 
     public void Return(TBase item)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIfDisposed(_disposed, this);
 
         var derivedItem = (TDerived)item;
         _pool.Return(derivedItem);
@@ -36,7 +38,7 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIfDisposed(_disposed, this);
 
         _pool.Clear();
     }

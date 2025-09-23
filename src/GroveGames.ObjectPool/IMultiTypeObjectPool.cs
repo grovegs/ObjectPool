@@ -1,3 +1,5 @@
+using System;
+
 namespace GroveGames.ObjectPool;
 
 public interface IMultiTypeObjectPool<TBase> : IDisposable where TBase : class

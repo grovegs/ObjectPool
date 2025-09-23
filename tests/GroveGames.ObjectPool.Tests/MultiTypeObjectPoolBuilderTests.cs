@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Frozen;
 
 namespace GroveGames.ObjectPool.Tests;

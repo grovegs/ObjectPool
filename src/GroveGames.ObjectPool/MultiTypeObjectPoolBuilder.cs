@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
 
@@ -8,7 +10,7 @@ public sealed class MultiTypeObjectPoolBuilder<TBase> where TBase : class
 
     public MultiTypeObjectPoolBuilder()
     {
-        _poolsByType = [];
+        _poolsByType = new Dictionary<Type, IObjectPool<TBase>>();
     }
 
     public MultiTypeObjectPoolBuilder<TBase> AddPool<TDerived>(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize) where TDerived : class, TBase
@@ -24,7 +26,7 @@ public sealed class MultiTypeObjectPoolBuilder<TBase> where TBase : class
         return this;
     }
 
-    public FrozenDictionary<Type, IObjectPool<TBase>> Build()
+    public IReadOnlyDictionary<Type, IObjectPool<TBase>> Build()
     {
         return _poolsByType.ToFrozenDictionary();
     }

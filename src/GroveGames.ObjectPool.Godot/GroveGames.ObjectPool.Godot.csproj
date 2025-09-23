@@ -1,21 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>$(RootNamespace).Godot</RootNamespace>
     <PackageTags>$(PackageTags);godot</PackageTags>
+
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GodotSharp" Version="4.3.0" />
+    <ProjectReference Include="..\GroveGames.ObjectPool\GroveGames.ObjectPool.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference
-      Include="../GroveGames.ObjectPool/GroveGames.ObjectPool.csproj" />
+    <PackageReference Include="GodotSharp" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="addons/**" />
-    <Compile Remove="addons/**" />
+    <Compile Remove="addons\**" />
+    <None Include="addons\**" />
   </ItemGroup>
-
 </Project>

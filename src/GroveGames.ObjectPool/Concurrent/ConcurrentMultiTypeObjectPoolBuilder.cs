@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
@@ -25,7 +27,7 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilder<TBase> where TBase : cl
         return this;
     }
 
-    public FrozenDictionary<Type, IObjectPool<TBase>> Build()
+    public IReadOnlyDictionary<Type, IObjectPool<TBase>> Build()
     {
         return _poolsByType.ToFrozenDictionary();
     }

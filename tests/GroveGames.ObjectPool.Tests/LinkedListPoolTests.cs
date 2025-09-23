@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace GroveGames.ObjectPool.Tests;
 
 public sealed class LinkedListPoolTests
