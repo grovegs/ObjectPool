@@ -36,6 +36,14 @@ dotnet test tests/GroveGames.ObjectPool.Tests/        # Core library tests only
 dotnet test tests/GroveGames.ObjectPool.Godot.Tests/  # Godot-specific tests only
 ```
 
+### Formatting
+```bash
+dotnet format                         # Format all code according to .editorconfig
+dotnet format --verify-no-changes    # Check if code is properly formatted (CI/CD)
+dotnet format whitespace             # Format whitespace only
+dotnet format style                  # Apply code style fixes
+```
+
 ### Packaging
 ```bash
 dotnet pack -c Release                # Create NuGet packages
@@ -69,7 +77,11 @@ The project uses a layered configuration approach with platform-specific setting
 - **Multi-targeting**: `net9.0` (with AOT support) and `netstandard2.1` (for broader compatibility)
 - **Nullable Reference Types**: Enabled across the project
 - **AOT Compatibility**: The `net9.0` target includes AOT analyzers and trimming support
-- **Code Formatting**: Automatic formatting on save configured in VS Code settings
+- **Code Formatting**:
+  - Automatic formatting on save configured in VS Code settings
+  - `dotnet format` command respects all `.editorconfig` settings
+  - GitHub Actions enforce formatting via `--verify-no-changes` flag
+  - Supports whitespace, style, and analyzer-based formatting
 
 ## Testing Framework
 
