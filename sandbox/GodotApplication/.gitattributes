@@ -1,0 +1,52 @@
+# Godot project files
+project.godot           text
+*.cfg                   text
+*.tscn                  text diff=unity3dyaml
+*.tres                  text diff=unity3dyaml
+*.cs                    text diff=csharp
+
+# Import files (Godot asset processing)
+*.import                text
+
+# Text-based assets
+*.txt                   text
+*.json                  text
+*.xml                   text
+*.shader                text
+
+# Images and media should be binary
+*.png                   binary
+*.jpg                   binary
+*.jpeg                  binary
+*.gif                   binary
+*.bmp                   binary
+*.svg                   text
+*.ico                   binary
+*.tif                   binary
+*.tiff                  binary
+
+# Audio files
+*.wav                   binary
+*.mp3                   binary
+*.ogg                   binary
+*.aiff                  binary
+
+# 3D models
+*.fbx                   binary
+*.dae                   text
+*.obj                   text
+*.blend                 binary
+*.glb                   binary
+*.gltf                  text
+
+# Archives
+*.zip                   binary
+*.7z                    binary
+*.tar                   binary
+*.gz                    binary
+
+# Executables
+*.exe                   binary
+*.dll                   binary
+*.so                    binary
+*.pdb                   binary
