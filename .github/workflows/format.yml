@@ -12,7 +12,7 @@ on:
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/godot-package-format.yml@main
+    uses: grovegs/workflows/.github/workflows/godot-package-format.yml@v0.0.1
     with:
       core-project: src/GroveGames.ObjectPool
       godot-project: src/GroveGames.ObjectPool.Godot

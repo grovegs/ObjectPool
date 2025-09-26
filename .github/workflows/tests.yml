@@ -12,7 +12,7 @@ on:
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@main
+    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@v0.0.1
     with:
       core-test-project: tests/GroveGames.ObjectPool.Tests
       godot-test-project: tests/GroveGames.ObjectPool.Godot.Tests
