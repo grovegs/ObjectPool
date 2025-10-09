@@ -10,10 +10,12 @@ on:
       - main
       - develop
 
+permissions:
+  contents: read
+
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@v0.0.1
+    uses: grovegs/workflows/.github/workflows/package-tests.yml@v0.1.0
     with:
-      core-test-project: tests/GroveGames.ObjectPool.Tests
-      godot-test-project: tests/GroveGames.ObjectPool.Godot.Tests
+      dotnet-tests: '["tests/GroveGames.ObjectPool.Tests", "tests/GroveGames.ObjectPool.Godot.Tests"]'
       global-json-file: global.json
