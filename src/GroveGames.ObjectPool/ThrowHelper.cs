@@ -25,7 +25,6 @@ internal static class ThrowHelper
     }
 
     [DoesNotReturn]
-    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void ThrowObjectDisposed(object instance)
     {
         throw new ObjectDisposedException(instance.GetType().FullName);
