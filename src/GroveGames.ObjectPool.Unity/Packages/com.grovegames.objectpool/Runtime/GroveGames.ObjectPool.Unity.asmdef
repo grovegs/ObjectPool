@@ -1,5 +1,5 @@
 {
-    "name": "GroveGames.ObjectPool",
+    "name": "GroveGames.ObjectPool.Unity",
     "rootNamespace": "GroveGames.ObjectPool",
     "references": [],
     "includePlatforms": [],
