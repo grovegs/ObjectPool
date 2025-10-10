@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/package-format.yml@v0.1.3
+    uses: grovegs/workflows/.github/workflows/package-format.yml@v0.1.4
     with:
       files: "**/*.{json,md}"
       dotnet-projects: '["src/GroveGames.ObjectPool", "src/GroveGames.ObjectPool.Godot", "tests/GroveGames.ObjectPool.Tests", "tests/GroveGames.ObjectPool.Godot.Tests"]'
