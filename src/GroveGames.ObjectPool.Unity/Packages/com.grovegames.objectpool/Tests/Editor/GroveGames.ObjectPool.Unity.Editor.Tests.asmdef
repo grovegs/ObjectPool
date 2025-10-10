@@ -1,7 +1,8 @@
 {
-    "name": "GroveGames.ObjectPool.Editor",
-    "rootNamespace": "GroveGames.ObjectPool.Editor",
+    "name": "GroveGames.ObjectPool.Unity.Editor.Tests",
+    "rootNamespace": "GroveGames.ObjectPool.Editor.Tests",
     "references": [
+        "GUID:0acc523941302664db1f4e527237feb3",
         "GUID:dea41e7a19cf34cbd9538887b672eed4"
     ],
     "includePlatforms": [

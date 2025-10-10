@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.grovegames.objectpool": "file:../../src/GroveGames.ObjectPool.Unity",
     "com.github-glitchenzo.nugetforunity": "4.5.0",
     "com.unity.ide.visualstudio": "2.0.23",
     "com.unity.modules.ui": "1.0.0"
