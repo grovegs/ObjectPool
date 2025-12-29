@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/package-release.yml@v0.1.7
+    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.0.24
     with:
       name: "Object Pool"
       version-type: ${{ inputs.version-type }}
