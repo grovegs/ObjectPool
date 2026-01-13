@@ -16,7 +16,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _items.Count;
         }
     }
@@ -25,17 +25,17 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _maxSize;
         }
     }
 
     public ObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNull(factory);
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _items = new Queue<T>(initialSize);
         _factory = factory;
@@ -47,7 +47,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public T Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var item = _items.TryDequeue(out var pooledItem) ? pooledItem : _factory();
         _onRent?.Invoke(item);
@@ -56,7 +56,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public void Return(T item)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _onReturn?.Invoke(item);
 
@@ -68,7 +68,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _items.Clear();
     }

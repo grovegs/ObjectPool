@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GroveGames.ObjectPool is a high-performance object pooling library for .NET, Unity, and Godot with Native AOT support. The library provides thread-safe and non-thread-safe object pools for various collection types and custom objects.
+GroveGames.ObjectPool is a high-performance object pooling library for .NET, Unity, and Godot with Native AOT support. The library provides thread-safe and non-thread-safe object pools for various collection types and custom objects. It targets .NET 10.0 for modern features and netstandard2.1 for Unity compatibility.
 
 ## Project Structure
 
@@ -74,9 +74,14 @@ The project uses a layered configuration approach with platform-specific setting
 - **Project Configuration** (`project.godot`): Godot 4.3+ project with C# support and mobile rendering
 
 ### Target Frameworks & Features
-- **Multi-targeting**: `net9.0` (with AOT support) and `netstandard2.1` (for broader compatibility)
+- **Multi-targeting**: `net10.0` (with AOT support) and `netstandard2.1` (for Unity compatibility)
 - **Nullable Reference Types**: Enabled across the project
-- **AOT Compatibility**: The `net9.0` target includes AOT analyzers and trimming support
+- **AOT Compatibility**: The `net10.0` target includes AOT analyzers and trimming support
+- **Polyfills**: Custom polyfill static classes in `GroveGames.ObjectPool.Polyfills` namespace provide backward compatibility for netstandard2.1, aliased via global usings:
+  - `CallerArgumentExpressionAttribute` for parameter name capture
+  - `ArgumentNullException.ThrowIfNull` static method
+  - `ArgumentOutOfRangeException.ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfGreaterThan` static methods
+  - `ObjectDisposedException.ThrowIf` static method
 - **Code Formatting**:
   - Automatic formatting on save configured in VS Code settings
   - `dotnet format` command respects all `.editorconfig` settings
@@ -102,7 +107,7 @@ Key build configurations:
 
 ## SDK Version
 
-The project targets .NET 9.0 SDK (see `global.json`). When working with this codebase, ensure you have .NET 9.0 SDK installed.
+The project targets .NET 10.0 SDK (see `global.json`). When working with this codebase, ensure you have .NET 10.0 SDK installed.
 
 ## GitHub Workflows
 
@@ -129,6 +134,7 @@ These sandbox projects are useful for:
 
 ## Key Dependencies
 
-- **PolySharp**: Used for .NET Standard 2.1 compatibility (backporting modern language features)
-- **System.Collections.Immutable**: For older target frameworks that don't include it
+- **System.Collections.Immutable**: For older target frameworks that don't include it (used by FrozenDictionary polyfill)
 - **Microsoft.SourceLink.GitHub**: For source linking in packages
+
+Note: Previously used PolySharp has been replaced with custom polyfill extensions in the `System` namespace for better control and lighter weight.

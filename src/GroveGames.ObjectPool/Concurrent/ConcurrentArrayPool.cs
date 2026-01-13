@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -12,9 +13,9 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 
     public ConcurrentArrayPool(int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _poolsBySize = new ConcurrentDictionary<int, ConcurrentObjectPool<T[]>>();
         _initialSize = initialSize;
@@ -24,21 +25,21 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 
     public int Count(int size)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _poolsBySize.TryGetValue(size, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int size)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _poolsBySize.ContainsKey(size) || size > 0 ? _maxSize : 0;
     }
 
     public T[] Rent(int size)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (size == 0)
         {
@@ -51,7 +52,7 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 
     public void Return(T[] array)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         var size = array.Length;
 
@@ -63,7 +64,7 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         foreach (var kvp in _poolsBySize)
         {

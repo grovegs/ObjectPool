@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
@@ -11,7 +12,7 @@ public sealed class ListPool<T> : IListPool<T> where T : notnull
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _pool.Count;
         }
     }
@@ -20,16 +21,16 @@ public sealed class ListPool<T> : IListPool<T> where T : notnull
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _pool.MaxSize;
         }
     }
 
     public ListPool(int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ObjectPool<List<T>>(static () => [], null, static list => list.Clear(), initialSize, maxSize);
         _disposed = false;
@@ -37,21 +38,21 @@ public sealed class ListPool<T> : IListPool<T> where T : notnull
 
     public List<T> Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         return _pool.Rent();
     }
 
     public void Return(List<T> list)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Return(list);
     }
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Clear();
     }
