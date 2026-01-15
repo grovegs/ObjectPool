@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version-type:
-        description: "Select the version to increment (major, minor, patch)."
+        description: Select the version to increment such as major, minor, or patch
         required: true
-        default: "patch"
+        default: patch
         type: choice
         options:
           - major
@@ -15,18 +15,25 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/package-release.yml@v0.1.7
+    name: Release Package
+    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.0.28
     with:
-      name: "Object Pool"
+      package-name: Object Pool
       version-type: ${{ inputs.version-type }}
-      dotnet-projects: '["src/GroveGames.ObjectPool", "src/GroveGames.ObjectPool.Godot"]'
-      godot-addons: '["src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool"]'
-      unity-packages: '["src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool"]'
+      runs-on: ubuntu-latest
+      dotnet-project: src/GroveGames.ObjectPool
       global-json-file: global.json
       directory-build-props: Directory.Build.props
+      godot-addon: src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool
+      unity-package: src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool
+      create-tag: true
+      publish-github: true
+      publish-nuget: true
+      publish-discord: true
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       nuget-api-key: ${{ secrets.NUGET_API_KEY }}

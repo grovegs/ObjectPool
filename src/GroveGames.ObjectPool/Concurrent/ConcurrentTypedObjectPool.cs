@@ -12,7 +12,7 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.Count;
         }
     }
@@ -21,17 +21,17 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.MaxSize;
         }
     }
 
     public ConcurrentTypedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNull(factory);
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         _disposed = 0;
@@ -39,14 +39,14 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
 
     public TBase Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(TBase item)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         var derivedItem = (TDerived)item;
         _pool.Return(derivedItem);
@@ -54,7 +54,7 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
     }

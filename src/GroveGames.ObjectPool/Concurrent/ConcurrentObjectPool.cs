@@ -19,7 +19,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _count;
         }
     }
@@ -28,17 +28,17 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _maxSize;
         }
     }
 
     public ConcurrentObjectPool(Func<T> factory, Action<T>? onRent, Action<T>? onReturn, int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNull(factory);
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _items = new ConcurrentQueue<T>();
         _factory = factory;
@@ -52,7 +52,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public T Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_items.TryDequeue(out var pooledItem))
         {
@@ -68,7 +68,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public void Return(T item)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _onReturn?.Invoke(item);
 
@@ -84,7 +84,7 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _items.Clear();
         Interlocked.Exchange(ref _count, 0);

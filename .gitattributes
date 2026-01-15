@@ -5,6 +5,7 @@
 *.csx      text diff=csharp
 *.cshtml   text diff=html
 *.sln      text eol=crlf
+*.slnx     text eol=crlf
 *.csproj   text eol=crlf
 *.props    text eol=crlf
 *.targets  text eol=crlf

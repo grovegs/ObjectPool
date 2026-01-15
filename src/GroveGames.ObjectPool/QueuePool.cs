@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
@@ -11,7 +12,7 @@ public sealed class QueuePool<T> : IQueuePool<T> where T : notnull
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _pool.Count;
         }
     }
@@ -20,16 +21,16 @@ public sealed class QueuePool<T> : IQueuePool<T> where T : notnull
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return _pool.MaxSize;
         }
     }
 
     public QueuePool(int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ObjectPool<Queue<T>>(static () => new Queue<T>(), null, static queue => queue.Clear(), initialSize, maxSize);
         _disposed = false;
@@ -37,21 +38,21 @@ public sealed class QueuePool<T> : IQueuePool<T> where T : notnull
 
     public Queue<T> Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         return _pool.Rent();
     }
 
     public void Return(Queue<T> queue)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Return(queue);
     }
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Clear();
     }

@@ -1,7 +1,7 @@
 <Project Sdk="Godot.NET.Sdk/4.3.0">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <ImplicitUsings>false</ImplicitUsings>
@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference
-      Include="..\..\src\GroveGames.ObjectPool.Godot\GroveGames.ObjectPool.Godot.csproj" />
+      Include="..\..\src\GroveGames.ObjectPool\GroveGames.ObjectPool.csproj" />
   </ItemGroup>
 
 </Project>

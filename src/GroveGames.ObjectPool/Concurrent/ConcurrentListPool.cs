@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -12,7 +13,7 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.Count;
         }
     }
@@ -21,16 +22,16 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.MaxSize;
         }
     }
 
     public ConcurrentListPool(int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<List<T>>(
             static () => [],
@@ -43,21 +44,21 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
 
     public List<T> Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(List<T> list)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Return(list);
     }
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -12,7 +13,7 @@ public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKe
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.Count;
         }
     }
@@ -21,16 +22,16 @@ public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKe
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.MaxSize;
         }
     }
 
     public ConcurrentDictionaryPool(int initialSize, int maxSize, IEqualityComparer<TKey>? comparer = null)
     {
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<Dictionary<TKey, TValue>>(
             () => new Dictionary<TKey, TValue>(comparer),
@@ -43,21 +44,21 @@ public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKe
 
     public Dictionary<TKey, TValue> Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(Dictionary<TKey, TValue> dictionary)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Return(dictionary);
     }
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
     }

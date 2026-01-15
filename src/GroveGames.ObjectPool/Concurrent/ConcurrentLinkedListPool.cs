@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -12,7 +13,7 @@ public sealed class ConcurrentLinkedListPool<T> : ILinkedListPool<T> where T : n
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.Count;
         }
     }
@@ -21,16 +22,16 @@ public sealed class ConcurrentLinkedListPool<T> : ILinkedListPool<T> where T : n
     {
         get
         {
-            ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             return _pool.MaxSize;
         }
     }
 
     public ConcurrentLinkedListPool(int initialSize, int maxSize)
     {
-        ThrowHelper.ThrowIfNegative(initialSize);
-        ThrowHelper.ThrowIfGreaterThan(initialSize, maxSize);
-        ThrowHelper.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
         _pool = new ConcurrentObjectPool<LinkedList<T>>(
             static () => new LinkedList<T>(),
@@ -43,21 +44,21 @@ public sealed class ConcurrentLinkedListPool<T> : ILinkedListPool<T> where T : n
 
     public LinkedList<T> Rent()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         return _pool.Rent();
     }
 
     public void Return(LinkedList<T> linkedList)
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Return(linkedList);
     }
 
     public void Clear()
     {
-        ThrowHelper.ThrowIfDisposed(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
     }
