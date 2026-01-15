@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/package-tests.yml@v0.1.7
+    uses: grovegs/workflows/.github/workflows/package-tests.yml@v1.0.27
     with:
-      dotnet-tests: '["tests/GroveGames.ObjectPool.Tests", "tests/GroveGames.ObjectPool.Godot.Tests"]'
+      dotnet-project: tests/GroveGames.ObjectPool.Tests
       global-json-file: global.json
