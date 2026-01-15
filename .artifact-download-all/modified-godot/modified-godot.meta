@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "artifact_name": "modified-godot",
+  "workspace": "/home/runner/work/ObjectPool/ObjectPool",
+  "created_at": "2026-01-15T14:01:39Z",
+  "files_count": 1,
+  "files": [
+    "src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool/plugin.cfg"
+  ]
+}
