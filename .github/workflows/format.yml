@@ -18,5 +18,5 @@ jobs:
     uses: grovegs/workflows/.github/workflows/package-format.yml@v1.0.27
     with:
       files: "**/*.{json,md}"
-      dotnet-solution: .
+      dotnet-solution: ""
       global-json-file: global.json
