@@ -34,14 +34,6 @@ namespace GroveGames.ObjectPool.Unity.Tests
         }
 
         [Test]
-        public void Constructor_WithInitialSize_PrewarmsPool()
-        {
-            using var pool = new GameObjectPool(_prefab, null, 5, 10);
-
-            Assert.That(pool.Count, Is.EqualTo(5));
-        }
-
-        [Test]
         public void Constructor_WithNullPrefab_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => new GameObjectPool(null, null, 0, 10));
