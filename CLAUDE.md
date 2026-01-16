@@ -77,16 +77,39 @@ The project uses a layered configuration approach with platform-specific setting
 - **Multi-targeting**: `net10.0` (with AOT support) and `netstandard2.1` (for Unity compatibility)
 - **Nullable Reference Types**: Enabled across the project
 - **AOT Compatibility**: The `net10.0` target includes AOT analyzers and trimming support
-- **Polyfills**: Custom polyfill static classes in `GroveGames.ObjectPool.Polyfills` namespace provide backward compatibility for netstandard2.1, aliased via global usings:
+- **Polyfills via Extension Members**: Custom polyfills using C# 14 extension members (`extension(Type)` syntax) in `Polyfills/` folder provide backward compatibility for netstandard2.1. These use `#if !NET6_0_OR_GREATER` preprocessor directives and are placed in the `System` namespace for seamless usage:
   - `CallerArgumentExpressionAttribute` for parameter name capture
   - `ArgumentNullException.ThrowIfNull` static method
   - `ArgumentOutOfRangeException.ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfGreaterThan` static methods
   - `ObjectDisposedException.ThrowIf` static method
+  - `FrozenDictionary` for immutable dictionary support
 - **Code Formatting**:
   - Automatic formatting on save configured in VS Code settings
   - `dotnet format` command respects all `.editorconfig` settings
   - GitHub Actions enforce formatting via `--verify-no-changes` flag
   - Supports whitespace, style, and analyzer-based formatting
+
+## Platform Integration Structure
+
+### Unity Package Structure (`src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool/`)
+Standard Unity Package Manager (UPM) layout:
+- `Runtime/` - Runtime scripts with `.asmdef`
+- `Editor/` - Editor scripts with `.asmdef`
+- `Tests/Runtime/` - Unity Test Framework tests with `.asmdef`
+- `package.json` - UPM package manifest
+- `LICENSE` → symlink to root LICENSE
+- `README.md` → symlink to root README.md
+
+The Unity package requires the core NuGet package (`GroveGames.ObjectPool`) installed via NuGetForUnity, then the Unity package via git URL.
+
+### Godot Addon Structure (`src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool/`)
+Standard Godot addon layout:
+- `plugin.cfg` - Godot plugin configuration
+- `Plugin.cs` - Plugin entry point (EditorPlugin)
+- `LICENSE` → symlink to root LICENSE
+- `README.md` → symlink to root README.md
+
+The Godot addon requires the NuGet package (`GroveGames.ObjectPool.Godot`) plus the addon files extracted to project's `addons/` folder.
 
 ## Testing Framework
 
@@ -138,3 +161,51 @@ These sandbox projects are useful for:
 - **Microsoft.SourceLink.GitHub**: For source linking in packages
 
 Note: Previously used PolySharp has been replaced with custom polyfill extensions in the `System` namespace for better control and lighter weight.
+
+## Template Patterns for Other Packages
+
+This project structure serves as a template for other GroveGames packages. Key patterns to follow:
+
+### Backward Compatibility via Static Extensions
+
+Use C# 14 extension members with preprocessor directives for .NET API polyfills:
+
+```csharp
+#if !NET6_0_OR_GREATER
+namespace System;
+
+internal static class ArgumentNullExceptionExtensions
+{
+    extension(ArgumentNullException)
+    {
+        public static void ThrowIfNull([NotNull] object? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+            if (argument is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+        }
+    }
+}
+#endif
+```
+
+### README Structure
+
+Consistent platform sections with installation + usage + components:
+
+1. **Features** - Brief feature list
+2. **.NET** - NuGet install, usage examples, core/concurrent components
+3. **Unity** - NuGetForUnity + git URL install, Unity-specific usage, Unity components
+4. **Godot** - NuGet + addon install, Godot-specific usage
+5. **Architecture** - Performance optimizations
+6. **Testing/Contributing/License**
+
+### Sandbox Applications
+
+Always include sandbox projects for testing:
+
+- `sandbox/ConsoleApplication/` - Basic .NET testing
+- `sandbox/UnityApplication/` - Unity integration testing (references Unity package locally)
+- `sandbox/GodotApplication/` - Godot integration testing (references Godot addon locally)
+- `sandbox/DotnetBenchmark/` - Performance benchmarking
