@@ -1,0 +1,6 @@
+﻿<Solution>
+  <Project Path="GroveGames.ObjectPool.Unity.csproj" />
+  <Project Path="GroveGames.ObjectPool.Unity.Tests.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="GroveGames.ObjectPool.Unity.Editor.csproj" />
+</Solution>
