@@ -10,7 +10,7 @@ GroveGames.ObjectPool is a high-performance object pooling library for .NET, Uni
 
 The repository contains three main project types:
 
-- **Core Library** (`src/GroveGames.ObjectPool/`): The main .NET library targeting both `net9.0` and `netstandard2.1`
+- **Core Library** (`src/GroveGames.ObjectPool/`): The main .NET library targeting both `net10.0` and `netstandard2.1`
 - **Godot Integration** (`src/GroveGames.ObjectPool.Godot/`): Godot-specific extensions and plugin
 - **Unity Integration** (`src/GroveGames.ObjectPool.Unity/`): Unity-specific package structure
 
@@ -128,7 +128,7 @@ The Godot addon requires the NuGet package (`GroveGames.ObjectPool.Godot`) plus 
 Key build configurations:
 
 - **Multi-targeting**: Projects support both modern .NET and legacy .NET Standard
-- **AOT Support**: Native AOT compilation enabled for `net9.0` target
+- **AOT Support**: Native AOT compilation enabled for `net10.0` target
 - **Documentation**: XML documentation generation enabled for all projects
 - **Package Properties**: Centralized in `Directory.Build.props`
 
@@ -152,6 +152,15 @@ The `sandbox/` directory contains sample applications for testing and developmen
 - **UnityApplication**: Full Unity project for testing Unity integration
 - **GodotApplication**: Godot project with the object pool addon for testing Godot integration
 - **DotnetBenchmark**: Performance benchmarking application
+
+### Unity Sandbox Setup
+
+The Unity sandbox project uses a symlink to reference the Unity package locally:
+
+- `Packages/com.grovegames.objectpool` → symlink to `src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool`
+- `Assets/Editor/PluginBuilder.cs` → automatically builds `GroveGames.ObjectPool.dll` to `Assets/Plugins` when entering Play Mode
+- `Packages/manifest.json` → includes NuGetForUnity via OpenUPM scoped registry
+- `Assets/packages.config` → NuGet package dependencies
 
 These sandbox projects are useful for:
 - Testing changes across different platforms
@@ -210,6 +219,6 @@ Consistent platform sections with installation + usage + components:
 Always include sandbox projects for testing:
 
 - `sandbox/ConsoleApplication/` - Basic .NET testing
-- `sandbox/UnityApplication/` - Unity integration testing (references Unity package locally)
+- `sandbox/UnityApplication/` - Unity integration testing (symlink to Unity package, PluginBuilder for DLL)
 - `sandbox/GodotApplication/` - Godot integration testing (references Godot addon locally)
 - `sandbox/DotnetBenchmark/` - Performance benchmarking
