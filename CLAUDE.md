@@ -158,9 +158,11 @@ The `sandbox/` directory contains sample applications for testing and developmen
 The Unity sandbox project uses a symlink to reference the Unity package locally:
 
 - `Packages/com.grovegames.objectpool` → symlink to `src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool`
-- `Assets/Editor/PluginBuilder.cs` → automatically builds `GroveGames.ObjectPool.dll` to `Assets/Plugins` when entering Play Mode
+- `Assets/Editor/PluginBuilder/` → separate assembly that auto-builds `GroveGames.ObjectPool.dll` to `Assets/Plugins`
 - `Packages/manifest.json` → includes NuGetForUnity via OpenUPM scoped registry
 - `Assets/packages.config` → NuGet package dependencies
+
+The PluginBuilder is in a separate assembly (`PluginBuilder.Editor.asmdef`) with no dependencies, allowing it to compile even when the Unity package has errors due to a missing DLL. On first Unity open, it builds the DLL automatically, then refreshes so the package can compile.
 
 ### Godot Sandbox Setup
 
@@ -225,6 +227,6 @@ Consistent platform sections with installation + usage + components:
 Always include sandbox projects for testing:
 
 - `sandbox/ConsoleApplication/` - Basic .NET testing
-- `sandbox/UnityApplication/` - Unity integration testing (symlink to Unity package, PluginBuilder for DLL)
+- `sandbox/UnityApplication/` - Unity integration testing (symlink to Unity package, isolated PluginBuilder assembly for auto DLL build)
 - `sandbox/GodotApplication/` - Godot integration testing (symlink to Godot addon)
 - `sandbox/DotnetBenchmark/` - Performance benchmarking
