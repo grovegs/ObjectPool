@@ -162,6 +162,12 @@ The Unity sandbox project uses a symlink to reference the Unity package locally:
 - `Packages/manifest.json` → includes NuGetForUnity via OpenUPM scoped registry
 - `Assets/packages.config` → NuGet package dependencies
 
+### Godot Sandbox Setup
+
+The Godot sandbox project uses a symlink to reference the Godot addon locally:
+
+- `addons/GroveGames.ObjectPool` → symlink to `src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool`
+
 These sandbox projects are useful for:
 - Testing changes across different platforms
 - Demonstrating usage examples
@@ -220,5 +226,5 @@ Always include sandbox projects for testing:
 
 - `sandbox/ConsoleApplication/` - Basic .NET testing
 - `sandbox/UnityApplication/` - Unity integration testing (symlink to Unity package, PluginBuilder for DLL)
-- `sandbox/GodotApplication/` - Godot integration testing (references Godot addon locally)
+- `sandbox/GodotApplication/` - Godot integration testing (symlink to Godot addon)
 - `sandbox/DotnetBenchmark/` - Performance benchmarking
