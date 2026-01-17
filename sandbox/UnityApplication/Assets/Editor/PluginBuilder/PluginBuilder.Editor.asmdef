@@ -1,9 +1,7 @@
 {
-    "name": "GroveGames.ObjectPool.Unity.Editor",
-    "rootNamespace": "GroveGames.ObjectPool.Unity.Editor",
-    "references": [
-        "GUID:dea41e7a19cf34cbd9538887b672eed4"
-    ],
+    "name": "PluginBuilder.Editor",
+    "rootNamespace": "UnityApplication.Editor",
+    "references": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -11,7 +9,7 @@
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": false,
+    "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false
