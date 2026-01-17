@@ -1,20 +1,33 @@
 using UnityEngine;
 using UnityEditor;
 using System.Diagnostics;
+using System.IO;
 
 namespace UnityApplication.Editor
 {
     [InitializeOnLoad]
     public static class PluginBuilder
     {
+        private const string PluginFileName = "GroveGames.ObjectPool.dll";
+        private const string PluginPath = "Assets/Plugins/" + PluginFileName;
+        private const string ProjectPath = "../../src/GroveGames.ObjectPool/GroveGames.ObjectPool.csproj";
+
         static PluginBuilder()
         {
+            string projectRoot = Path.Combine(Application.dataPath, "..");
+            string pluginFullPath = Path.Combine(projectRoot, PluginPath);
+
+            if (!File.Exists(pluginFullPath))
+            {
+                BuildPlugin();
+            }
+
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (state == PlayModeStateChange.EnteredPlayMode)
+            if (state == PlayModeStateChange.ExitingEditMode)
             {
                 BuildPlugin();
             }
@@ -22,7 +35,7 @@ namespace UnityApplication.Editor
 
         private static void BuildPlugin()
         {
-            UnityEngine.Debug.Log("Building GroveGames.ObjectPool.dll...");
+            UnityEngine.Debug.Log($"Building {PluginFileName}...");
 
             string dotnetPath = GetDotNetPath();
             if (string.IsNullOrEmpty(dotnetPath))
@@ -31,10 +44,17 @@ namespace UnityApplication.Editor
                 return;
             }
 
+            string projectRoot = Path.Combine(Application.dataPath, "..");
+            string pluginsDir = Path.Combine(projectRoot, "Assets/Plugins");
+            if (!Directory.Exists(pluginsDir))
+            {
+                Directory.CreateDirectory(pluginsDir);
+            }
+
             var process = new Process();
             process.StartInfo.FileName = dotnetPath;
-            process.StartInfo.Arguments = "build ../../src/GroveGames.ObjectPool/GroveGames.ObjectPool.csproj -c Release -f netstandard2.1 -o ./Assets/Plugins";
-            process.StartInfo.WorkingDirectory = Application.dataPath + "/..";
+            process.StartInfo.Arguments = $"build {ProjectPath} -c Release -f netstandard2.1 -o ./Assets/Plugins";
+            process.StartInfo.WorkingDirectory = projectRoot;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
