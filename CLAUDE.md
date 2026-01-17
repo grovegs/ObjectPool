@@ -211,10 +211,28 @@ public SomeFactory(..., ITimeProvider? timeProvider = null)
 ```
 
 This pattern ensures:
+
 - Public API only exposes types defined in the library
 - External dependencies are implementation details
 - Unity/Godot projects compile without needing polyfill packages in their project
 - Easy unit testing via mock implementations
+
+### Platform-Specific Project Settings
+
+Both Unity and Godot integrations can provide project settings for configuration (see Logger project for full example):
+
+**Unity** (via `SettingsProvider`):
+- Settings stored in `ProjectSettings/GroveGames{PackageName}Settings.json`
+- UI at Edit > Project Settings > Grove Games > {Package}
+- Settings class with `Load()` and `Save()` methods
+- `SettingsProvider` subclass for Editor UI
+
+**Godot** (via `ProjectSettings`):
+- Settings stored in Godot's project settings under `grove_games/{package}/`
+- Static settings class with `GodotSetting<T>` typed accessors
+- `CreateIfNotExist()` to initialize defaults
+
+Both provide factory classes and builder extensions for easy setup.
 
 ### Backward Compatibility via Static Extensions
 
