@@ -21,18 +21,9 @@ namespace UnityApplication.Editor
             {
                 BuildPlugin();
             }
-
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
-        private static void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.ExitingEditMode)
-            {
-                BuildPlugin();
-            }
-        }
-
+        [MenuItem("Grove Games/Plugin Builder/Build")]
         private static void BuildPlugin()
         {
             UnityEngine.Debug.Log($"Building {PluginFileName}...");
