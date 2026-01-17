@@ -187,6 +187,35 @@ Note: Previously used PolySharp has been replaced with custom polyfill extension
 
 This project structure serves as a template for other GroveGames packages. Key patterns to follow:
 
+### Interface Abstraction for External Dependencies
+
+When using types from NuGet packages that are only available in newer .NET versions, wrap them in custom interfaces to avoid exposing them in the public API. This prevents Unity/Godot users from needing to reference those packages directly.
+
+Example pattern (from Logger project):
+
+```csharp
+public interface ITimeProvider
+{
+    DateTimeOffset GetUtcNow();
+}
+
+public sealed class SystemTimeProvider : ITimeProvider
+{
+    public DateTimeOffset GetUtcNow() => TimeProvider.System.GetUtcNow();
+}
+
+public SomeFactory(..., ITimeProvider? timeProvider = null)
+{
+    _timeProvider = timeProvider ?? new SystemTimeProvider();
+}
+```
+
+This pattern ensures:
+- Public API only exposes types defined in the library
+- External dependencies are implementation details
+- Unity/Godot projects compile without needing polyfill packages in their project
+- Easy unit testing via mock implementations
+
 ### Backward Compatibility via Static Extensions
 
 Use C# 14 extension members with preprocessor directives for .NET API polyfills:
