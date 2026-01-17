@@ -32,8 +32,7 @@ dotnet build -c Release               # Release build
 ### Testing
 ```bash
 dotnet test                           # Run all tests
-dotnet test tests/GroveGames.ObjectPool.Tests/        # Core library tests only
-dotnet test tests/GroveGames.ObjectPool.Godot.Tests/  # Godot-specific tests only
+dotnet test tests/GroveGames.ObjectPool.Tests/        # Core library tests
 ```
 
 ### Formatting
@@ -100,6 +99,12 @@ Standard Unity Package Manager (UPM) layout:
 - `LICENSE` → symlink to root LICENSE
 - `README.md` → symlink to root README.md
 
+Unity-specific components:
+- `IGameObjectPool` / `GameObjectPool` - Pool interface and implementation for Unity GameObjects
+- `IComponentPool<T>` / `ComponentPool<T>` - Pool interface and implementation for Unity Components
+- `GameObjectRental` / `ComponentRental<T>` - RAII-style rental structs for automatic return on dispose
+- `GameObjectPoolExtensions` / `ComponentPoolExtensions` - Extension methods for fluent API
+
 The Unity package requires the core NuGet package (`GroveGames.ObjectPool`) installed via NuGetForUnity, then the Unity package via git URL.
 
 ### Godot Addon Structure (`src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool/`)
@@ -116,7 +121,6 @@ The Godot addon requires the NuGet package (`GroveGames.ObjectPool.Godot`) plus 
 - **Test Framework**: xUnit v3
 - **Test Projects**:
   - `GroveGames.ObjectPool.Tests` (core functionality)
-  - `GroveGames.ObjectPool.Godot.Tests` (Godot-specific tests)
 - **Test Configuration**: Uses `xunit.runner.json` for xUnit configuration
 
 ## Build Configuration
