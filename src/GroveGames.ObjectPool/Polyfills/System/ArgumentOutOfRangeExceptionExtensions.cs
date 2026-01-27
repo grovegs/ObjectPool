@@ -8,27 +8,30 @@ internal static class ArgumentOutOfRangeExceptionExtensions
 {
     extension(ArgumentOutOfRangeException)
     {
-        public static void ThrowIfNegative(int value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void ThrowIfNegative<T>(T value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+            where T : IComparable<T>
         {
-            if (value < 0)
+            if (value.CompareTo(default!) < 0)
             {
-                throw new ArgumentOutOfRangeException(paramName, value, "Value must be non-negative.");
+                throw new ArgumentOutOfRangeException(paramName, value, $"'{paramName}' must be a non-negative value.");
             }
         }
 
-        public static void ThrowIfNegativeOrZero(int value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void ThrowIfNegativeOrZero<T>(T value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+            where T : IComparable<T>
         {
-            if (value <= 0)
+            if (value.CompareTo(default!) <= 0)
             {
-                throw new ArgumentOutOfRangeException(paramName, value, "Value must be positive.");
+                throw new ArgumentOutOfRangeException(paramName, value, $"'{paramName}' must be a positive value.");
             }
         }
 
-        public static void ThrowIfGreaterThan(int value, int other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void ThrowIfGreaterThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+            where T : IComparable<T>
         {
-            if (value > other)
+            if (value.CompareTo(other) > 0)
             {
-                throw new ArgumentOutOfRangeException(paramName, value, $"Value must be less than or equal to {other}.");
+                throw new ArgumentOutOfRangeException(paramName, value, $"'{paramName}' must be less than or equal to '{other}'.");
             }
         }
     }
