@@ -77,6 +77,18 @@ dotnet pack -c Release
 - No Resources.Load() - EditorBuildSettings.TryGetConfigObject() for runtime
 - Factory accepts settings instance for DI-friendly architecture
 
+**Unity C# Configuration:**
+
+- All Unity packages must include `csc.rsp` file in `Assets/` directory to enable C# 10 features:
+
+  ```text
+  -langversion:10
+  -nullable:enable
+  ```
+
+- This enables nullable reference types and C# 10 language features (pattern matching, global usings, etc.)
+- Required for compatibility with the core library that uses modern C# features
+
 **Godot Settings:**
 
 - Use Resource for project-wide settings (stored at res://addons/)
