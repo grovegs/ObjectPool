@@ -169,9 +169,16 @@ There are two installation steps required to use it in Unity.
 
 2. Install the `GroveGames.ObjectPool.Unity` package by referencing the git URL:
 
-```
-https://github.com/grovegs/ObjectPool.git?path=src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool
-```
+   ```text
+   https://github.com/grovegs/ObjectPool.git?path=src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool
+   ```
+
+3. Create a `csc.rsp` file in your `Assets/` directory with the following content to enable C# 10 features:
+
+   ```text
+   -langversion:10
+   -nullable:enable
+   ```
 
 With the Unity package, `GameObjectPool` and `ComponentPool` become available for pooling Unity objects with automatic activation/deactivation management.
 
