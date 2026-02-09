@@ -62,6 +62,13 @@ public sealed class DictionaryPool<TKey, TValue> : IDictionaryPool<TKey, TValue>
         _pool.Clear();
     }
 
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _pool.Warm();
+    }
+
     public void Dispose()
     {
         if (_disposed)

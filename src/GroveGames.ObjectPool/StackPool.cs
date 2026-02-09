@@ -57,6 +57,13 @@ public sealed class StackPool<T> : IStackPool<T> where T : notnull
         _pool.Clear();
     }
 
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _pool.Warm();
+    }
+
     public void Dispose()
     {
         if (_disposed)

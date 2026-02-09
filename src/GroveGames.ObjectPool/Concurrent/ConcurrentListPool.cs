@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -61,6 +61,13 @@ public sealed class ConcurrentListPool<T> : IListPool<T> where T : notnull
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        _pool.Warm();
     }
 
     public void Dispose()

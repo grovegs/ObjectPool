@@ -63,6 +63,13 @@ public sealed class ConcurrentHashSetPool<T> : IHashSetPool<T> where T : notnull
         _pool.Clear();
     }
 
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        _pool.Warm();
+    }
+
     public void Dispose()
     {
         if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)

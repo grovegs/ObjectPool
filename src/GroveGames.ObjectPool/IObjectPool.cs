@@ -9,4 +9,5 @@ public interface IObjectPool<T> : IDisposable where T : class
     public T Rent();
     public void Return(T item);
     public void Clear();
+    public void Warm();
 }

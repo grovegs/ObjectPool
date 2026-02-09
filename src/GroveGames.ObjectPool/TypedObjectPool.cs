@@ -58,6 +58,13 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
         _pool.Clear();
     }
 
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _pool.Warm();
+    }
+
     public void Dispose()
     {
         if (_disposed)
