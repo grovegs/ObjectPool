@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 
 namespace GroveGames.ObjectPool;
 
 public interface IArrayPool<T> : IDisposable where T : notnull
 {
-    int Count(int size);
-    int MaxSize(int size);
-    T[] Rent(int size);
-    void Return(T[] array);
-    void Clear();
+    public int Count(int size);
+    public int MaxSize(int size);
+    public T[] Rent(int size);
+    public void Return(T[] array);
+    public void Clear();
 }

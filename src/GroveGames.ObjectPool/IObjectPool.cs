@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 
 namespace GroveGames.ObjectPool;
 
 public interface IObjectPool<T> : IDisposable where T : class
 {
-    int Count { get; }
-    int MaxSize { get; }
-    T Rent();
-    void Return(T item);
-    void Clear();
+    public int Count { get; }
+    public int MaxSize { get; }
+    public T Rent();
+    public void Return(T item);
+    public void Clear();
 }

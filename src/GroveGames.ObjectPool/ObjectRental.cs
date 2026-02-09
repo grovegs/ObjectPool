@@ -1,4 +1,4 @@
-namespace GroveGames.ObjectPool;
+﻿namespace GroveGames.ObjectPool;
 
 public readonly ref struct ObjectRental<T>(IObjectPool<T> pool, T item) where T : class
 {

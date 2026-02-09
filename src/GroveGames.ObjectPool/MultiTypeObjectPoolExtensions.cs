@@ -1,4 +1,4 @@
-namespace GroveGames.ObjectPool;
+﻿namespace GroveGames.ObjectPool;
 
 public static class MultiTypeObjectPoolExtensions
 {
