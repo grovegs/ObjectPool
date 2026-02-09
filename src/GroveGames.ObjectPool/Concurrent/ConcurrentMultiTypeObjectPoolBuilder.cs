@@ -16,7 +16,7 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilder<TBase> where TBase : cl
 
     public ConcurrentMultiTypeObjectPoolBuilder<TBase> AddPool<TDerived>(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize) where TDerived : class, TBase
     {
-        var pool = new ConcurrentTypedObjectPool<TBase, TDerived>(factory, onRent, onReturn, initialSize, maxSize);
+        var pool = new ConcurrentDerivedObjectPool<TBase, TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         var type = typeof(TDerived);
 
         if (!_poolsByType.TryAdd(type, pool))

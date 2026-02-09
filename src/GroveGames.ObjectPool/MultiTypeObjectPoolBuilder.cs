@@ -15,7 +15,7 @@ public sealed class MultiTypeObjectPoolBuilder<TBase> where TBase : class
 
     public MultiTypeObjectPoolBuilder<TBase> AddPool<TDerived>(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize) where TDerived : class, TBase
     {
-        var pool = new TypedObjectPool<TBase, TDerived>(factory, onRent, onReturn, initialSize, maxSize);
+        var pool = new DerivedObjectPool<TBase, TDerived>(factory, onRent, onReturn, initialSize, maxSize);
         var type = typeof(TDerived);
 
         if (!_poolsByType.TryAdd(type, pool))
