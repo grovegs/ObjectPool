@@ -23,7 +23,6 @@
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
 
-
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <PackageReference Include="System.Collections.Immutable" Version="10.0.2" />
   </ItemGroup>

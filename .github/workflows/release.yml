@@ -28,6 +28,8 @@ jobs:
       dotnet-project: src/GroveGames.ObjectPool
       global-json-file: global.json
       directory-build-props: Directory.Build.props
+      readme-file: README.md
+      license-file: LICENSE
       godot-addon: src/GroveGames.ObjectPool.Godot/addons/GroveGames.ObjectPool
       unity-package: src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool
       create-tag: true
