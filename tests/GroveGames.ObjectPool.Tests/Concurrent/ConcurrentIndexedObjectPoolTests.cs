@@ -201,7 +201,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
                     Assert.Equal(key, item.Key);
                     pool.Return(key, item);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
         }
 
         await Task.WhenAll(tasks);
