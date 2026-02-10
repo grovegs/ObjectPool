@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -13,7 +13,11 @@ namespace GroveGames.ObjectPool.Unity
         {
             get
             {
-                ThrowIfDisposed();
+                if (_disposed)
+                {
+                    Debug.LogError($"{GetType().FullName} is disposed");
+                    return 0;
+                }
                 return _pool.Count;
             }
         }
@@ -22,7 +26,11 @@ namespace GroveGames.ObjectPool.Unity
         {
             get
             {
-                ThrowIfDisposed();
+                if (_disposed)
+                {
+                    Debug.LogError($"{GetType().FullName} is disposed");
+                    return 0;
+                }
                 return _pool.MaxSize;
             }
         }
@@ -31,22 +39,26 @@ namespace GroveGames.ObjectPool.Unity
         {
             if (prefab == null)
             {
-                throw new ArgumentNullException(nameof(prefab));
+                Debug.LogError("Prefab cannot be null");
+                prefab = new GameObject("NullPrefab").AddComponent<T>();
             }
 
             if (initialSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(initialSize));
-            }
-
-            if (initialSize > maxSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialSize));
+                Debug.LogError($"Initial size cannot be negative: {initialSize}");
+                initialSize = 0;
             }
 
             if (maxSize <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxSize));
+                Debug.LogError($"Max size must be positive: {maxSize}");
+                maxSize = 10;
+            }
+
+            if (initialSize > maxSize)
+            {
+                Debug.LogError($"Initial size {initialSize} cannot exceed max size {maxSize}");
+                initialSize = maxSize;
             }
 
             _pool = new ObjectPool<T>(
@@ -61,20 +73,42 @@ namespace GroveGames.ObjectPool.Unity
 
         public T Rent()
         {
-            ThrowIfDisposed();
+            if (_disposed)
+            {
+                Debug.LogError($"{GetType().FullName} is disposed");
+                return null;
+            }
             return _pool.Rent();
         }
 
         public void Return(T component)
         {
-            ThrowIfDisposed();
+            if (_disposed)
+            {
+                Debug.LogError($"{GetType().FullName} is disposed");
+                return;
+            }
             _pool.Return(component);
         }
 
         public void Clear()
         {
-            ThrowIfDisposed();
+            if (_disposed)
+            {
+                Debug.LogError($"{GetType().FullName} is disposed");
+                return;
+            }
             _pool.Clear();
+        }
+
+        public void Warm()
+        {
+            if (_disposed)
+            {
+                Debug.LogError($"{GetType().FullName} is disposed");
+                return;
+            }
+            _pool.Warm();
         }
 
         public void Dispose()
@@ -86,14 +120,6 @@ namespace GroveGames.ObjectPool.Unity
 
             _disposed = true;
             _pool.Dispose();
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
         }
     }
 }
