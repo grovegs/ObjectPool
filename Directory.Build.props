@@ -19,14 +19,14 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.0.14</Version>
+    <Version>0.0.15</Version>
     <PackageId>$(AssemblyName)</PackageId>
     <PackageProjectUrl>https://github.com/grovegs/ObjectPool</PackageProjectUrl>
     <RepositoryUrl>https://github.com/grovegs/ObjectPool</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageIcon>Icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Description>High-performance object pooling library for .NET, Unity, and Godot</Description>
+    <Description>High-performance object pooling library for .NET, Unity, and Godot with Native AOT support</Description>
     <PackageTags>object-pool;performance</PackageTags>
   </PropertyGroup>
 

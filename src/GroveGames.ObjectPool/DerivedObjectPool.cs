@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 
 namespace GroveGames.ObjectPool;
 
-public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
+public sealed class DerivedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
 {
     private readonly ObjectPool<TDerived> _pool;
     private bool _disposed;
@@ -11,7 +11,7 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
     {
         get
         {
-            ObjectDisposedException.ThrowIf(_disposed, typeof(TypedObjectPool<TBase, TDerived>));
+            ObjectDisposedException.ThrowIf(_disposed, typeof(DerivedObjectPool<TBase, TDerived>));
             return _pool.Count;
         }
     }
@@ -20,12 +20,12 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
     {
         get
         {
-            ObjectDisposedException.ThrowIf(_disposed, typeof(TypedObjectPool<TBase, TDerived>));
+            ObjectDisposedException.ThrowIf(_disposed, typeof(DerivedObjectPool<TBase, TDerived>));
             return _pool.MaxSize;
         }
     }
 
-    public TypedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
+    public DerivedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
@@ -56,6 +56,13 @@ public sealed class TypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where 
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Clear();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _pool.Warm();
     }
 
     public void Dispose()

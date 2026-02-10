@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -88,6 +88,18 @@ public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
 
         _items.Clear();
         Interlocked.Exchange(ref _count, 0);
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        for (int i = 0; i < _initialSize; i++)
+        {
+            var item = _factory();
+            _items.Enqueue(item);
+            Interlocked.Increment(ref _count);
+        }
     }
 
     public void Dispose()

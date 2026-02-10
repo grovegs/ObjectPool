@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
@@ -9,6 +9,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     private readonly Func<T> _factory;
     private readonly Action<T>? _onRent;
     private readonly Action<T>? _onReturn;
+    private readonly int _initialSize;
     private readonly int _maxSize;
     private bool _disposed;
 
@@ -41,6 +42,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
         _factory = factory;
         _onRent = onRent;
         _onReturn = onReturn;
+        _initialSize = initialSize;
         _maxSize = maxSize;
         _disposed = false;
     }
@@ -71,6 +73,16 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _items.Clear();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        for (int i = 0; i < _initialSize; i++)
+        {
+            _items.Enqueue(_factory());
+        }
     }
 
     public void Dispose()

@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
+public sealed class ConcurrentDerivedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
 {
     private readonly ConcurrentObjectPool<TDerived> _pool;
     private volatile int _disposed;
@@ -26,7 +26,7 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
         }
     }
 
-    public ConcurrentTypedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
+    public ConcurrentDerivedObjectPool(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
@@ -57,6 +57,13 @@ public sealed class ConcurrentTypedObjectPool<TBase, TDerived> : IObjectPool<TBa
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         _pool.Clear();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        _pool.Warm();
     }
 
     public void Dispose()

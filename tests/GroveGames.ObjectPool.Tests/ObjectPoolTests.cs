@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool.Tests;
@@ -221,6 +221,76 @@ public sealed class ObjectPoolTests
 
         // Act & Assert
         Assert.Throws<ObjectDisposedException>(pool.Clear);
+    }
+
+    [Fact]
+    public void Warm_CreatesInitialSizeItems()
+    {
+        // Arrange
+        int createdCount = 0;
+        using var pool = new ObjectPool<string>(() => { createdCount++; return $"item{createdCount}"; }, null, null, 5, 10);
+
+        // Act
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(5, pool.Count);
+        Assert.Equal(5, createdCount);
+    }
+
+    [Fact]
+    public void Warm_WithZeroInitialSize_DoesNothing()
+    {
+        // Arrange
+        int createdCount = 0;
+        using var pool = new ObjectPool<string>(() => { createdCount++; return "item"; }, null, null, 0, 10);
+
+        // Act
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(0, pool.Count);
+        Assert.Equal(0, createdCount);
+    }
+
+    [Fact]
+    public void Warm_CalledMultipleTimes_AddsMoreItems()
+    {
+        // Arrange
+        using var pool = new ObjectPool<string>(() => "test", null, null, 3, 10);
+
+        // Act
+        pool.Warm();
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(6, pool.Count);
+    }
+
+    [Fact]
+    public void Warm_AfterRentAndReturn_AddsMoreItems()
+    {
+        // Arrange
+        using var pool = new ObjectPool<string>(() => "test", null, null, 2, 10);
+        pool.Warm();
+        var item = pool.Rent();
+
+        // Act
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(3, pool.Count);
+    }
+
+    [Fact]
+    public void Warm_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var pool = new ObjectPool<string>(() => "test", null, null, 5, 10);
+        pool.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(pool.Warm);
     }
 
     [Fact]
