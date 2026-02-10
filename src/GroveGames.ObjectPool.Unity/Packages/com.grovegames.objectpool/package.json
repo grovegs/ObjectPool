@@ -1,6 +1,6 @@
 {
   "name": "com.grovegames.objectpool",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "displayName": "GroveGames.ObjectPool",
   "description": "High-performance object pooling library for .NET, Unity, and Godot",
   "unity": "2021.3",
