@@ -1,11 +1,15 @@
+* text=auto eol=lf
+
 # Godot project files
 project.godot           text
 *.cfg                   text
 *.tscn                  text diff=unity3dyaml
 *.tres                  text diff=unity3dyaml
 *.cs                    text diff=csharp
+*.gd                    text
+*.gdshader              text
 
-# Import files (Godot asset processing)
+# Import files
 *.import                text
 
 # Text-based assets
@@ -14,7 +18,7 @@ project.godot           text
 *.xml                   text
 *.shader                text
 
-# Images and media should be binary
+# Images
 *.png                   binary
 *.jpg                   binary
 *.jpeg                  binary
@@ -24,8 +28,9 @@ project.godot           text
 *.ico                   binary
 *.tif                   binary
 *.tiff                  binary
+*.webp                  binary
 
-# Audio files
+# Audio
 *.wav                   binary
 *.mp3                   binary
 *.ogg                   binary

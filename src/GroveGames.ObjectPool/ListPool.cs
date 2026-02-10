@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
@@ -55,6 +55,13 @@ public sealed class ListPool<T> : IListPool<T> where T : notnull
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Clear();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _pool.Warm();
     }
 
     public void Dispose()

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
@@ -60,6 +60,13 @@ public sealed class DictionaryPool<TKey, TValue> : IDictionaryPool<TKey, TValue>
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         _pool.Clear();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _pool.Warm();
     }
 
     public void Dispose()

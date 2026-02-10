@@ -1,4 +1,4 @@
-namespace GroveGames.ObjectPool;
+﻿namespace GroveGames.ObjectPool;
 
 public readonly ref struct ArrayRental<T>(IArrayPool<T> pool, T[] array) where T : notnull
 {
