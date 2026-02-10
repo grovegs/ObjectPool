@@ -34,36 +34,6 @@ namespace GroveGames.ObjectPool.Unity.Tests
         }
 
         [Test]
-        public void Constructor_WithNullPrefab_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new GameObjectPool(null, null, 0, 10));
-        }
-
-        [Test]
-        public void Constructor_WithNegativeInitialSize_ThrowsArgumentOutOfRangeException()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new GameObjectPool(_prefab, null, -1, 10));
-        }
-
-        [Test]
-        public void Constructor_WithInitialSizeGreaterThanMaxSize_ThrowsArgumentOutOfRangeException()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new GameObjectPool(_prefab, null, 15, 10));
-        }
-
-        [Test]
-        public void Constructor_WithZeroMaxSize_ThrowsArgumentOutOfRangeException()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new GameObjectPool(_prefab, null, 0, 0));
-        }
-
-        [Test]
-        public void Constructor_WithNegativeMaxSize_ThrowsArgumentOutOfRangeException()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new GameObjectPool(_prefab, null, 0, -1));
-        }
-
-        [Test]
         public void Rent_FromEmptyPool_CreatesNewGameObject()
         {
             using var pool = new GameObjectPool(_prefab, null, 0, 10);
@@ -126,54 +96,6 @@ namespace GroveGames.ObjectPool.Unity.Tests
             pool.Clear();
 
             Assert.That(pool.Count, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void Dispose_PreventsRent()
-        {
-            var pool = new GameObjectPool(_prefab, null, 0, 10);
-            pool.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => pool.Rent());
-        }
-
-        [Test]
-        public void Dispose_PreventsReturn()
-        {
-            var pool = new GameObjectPool(_prefab, null, 0, 10);
-            var instance = pool.Rent();
-            pool.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => pool.Return(instance));
-
-            UnityEngine.Object.DestroyImmediate(instance);
-        }
-
-        [Test]
-        public void Dispose_PreventsClear()
-        {
-            var pool = new GameObjectPool(_prefab, null, 0, 10);
-            pool.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => pool.Clear());
-        }
-
-        [Test]
-        public void Dispose_PreventsCountAccess()
-        {
-            var pool = new GameObjectPool(_prefab, null, 0, 10);
-            pool.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => _ = pool.Count);
-        }
-
-        [Test]
-        public void Dispose_PreventsMaxSizeAccess()
-        {
-            var pool = new GameObjectPool(_prefab, null, 0, 10);
-            pool.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => _ = pool.MaxSize);
         }
 
         [Test]

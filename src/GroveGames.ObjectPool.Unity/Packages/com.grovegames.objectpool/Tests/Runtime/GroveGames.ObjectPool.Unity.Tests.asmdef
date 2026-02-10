@@ -3,16 +3,16 @@
     "rootNamespace": "GroveGames.ObjectPool.Unity.Tests",
     "references": [
         "GUID:0acc523941302664db1f4e527237feb3",
-        "GUID:dea41e7a19cf34cbd9538887b672eed4"
+        "GUID:5b69e4e4fadb46bba04a92f0a48f88fe"
     ],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
+    "overrideReferences": true,
     "precompiledReferences": [
-        "nunit.framework.dll"
+        "GroveGames.ObjectPool.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [
