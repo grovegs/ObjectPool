@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentDerivedObjectPool<TBase, TDerived> : IObjectPool<TBase> where TDerived : class, TBase where TBase : class
+public sealed class ConcurrentDerivedObjectPool<TBase, TDerived> : IConcurrentObjectPool<TBase> where TDerived : class, TBase where TBase : class
 {
     private readonly ConcurrentObjectPool<TDerived> _pool;
     private volatile int _disposed;

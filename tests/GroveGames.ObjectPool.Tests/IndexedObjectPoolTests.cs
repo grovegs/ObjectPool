@@ -14,7 +14,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Constructor_ValidParameters_CreatesPool()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
 
         Assert.Equal(0, pool.Count(0));
         Assert.Equal(10, pool.MaxSize(0));
@@ -27,7 +27,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Constructor_NullFactory_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new IndexedObjectPool<TestObject>(3, null!, null, null, 5, 10));
+        Assert.Throws<ArgumentNullException>(() => new IndexedObjectPool<TestObject>(3, null!));
     }
 
     [Theory]
@@ -36,7 +36,7 @@ public sealed class IndexedObjectPoolTests
     public void Constructor_NonPositivePoolCount_ThrowsArgumentOutOfRangeException(int poolCount)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(poolCount, key => new TestObject { Key = key }, null, null, 5, 10));
+            new IndexedObjectPool<TestObject>(poolCount, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10)));
     }
 
     [Theory]
@@ -45,7 +45,7 @@ public sealed class IndexedObjectPoolTests
     public void Constructor_NegativeInitialSize_ThrowsArgumentOutOfRangeException(int initialSize)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, initialSize, 10));
+            new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, initialSize, 10)));
     }
 
     [Theory]
@@ -54,20 +54,20 @@ public sealed class IndexedObjectPoolTests
     public void Constructor_NonPositiveMaxSize_ThrowsArgumentOutOfRangeException(int maxSize)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 5, maxSize));
+            new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, maxSize)));
     }
 
     [Fact]
     public void Constructor_InitialSizeGreaterThanMaxSize_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 15, 10));
+            new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 15, 10)));
     }
 
     [Fact]
     public void Rent_ValidKey_ReturnsObjectWithCorrectKey()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         var item0 = pool.Rent(0);
         var item1 = pool.Rent(1);
@@ -84,11 +84,12 @@ public sealed class IndexedObjectPoolTests
         int rentCount = 0;
         using var pool = new IndexedObjectPool<TestObject>(
             3,
-            key => new TestObject { Key = key },
-            obj => { obj.IsRented = true; rentCount++; },
-            null,
-            0,
-            5);
+            index => new ObjectPool<TestObject>(
+                () => new TestObject { Key = index },
+                obj => { obj.IsRented = true; rentCount++; },
+                null,
+                0,
+                5));
 
         var item = pool.Rent(1);
 
@@ -102,7 +103,7 @@ public sealed class IndexedObjectPoolTests
     [InlineData(10)]
     public void Rent_InvalidKey_ThrowsArgumentOutOfRangeException(int key)
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, k => new TestObject { Key = k }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => pool.Rent(key));
     }
@@ -110,7 +111,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Return_ItemToPool_AddsToPool()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
         var item = pool.Rent(1);
 
         pool.Return(1, item);
@@ -124,11 +125,12 @@ public sealed class IndexedObjectPoolTests
         int returnCount = 0;
         using var pool = new IndexedObjectPool<TestObject>(
             3,
-            key => new TestObject { Key = key },
-            null,
-            obj => { obj.IsReturned = true; returnCount++; },
-            0,
-            5);
+            index => new ObjectPool<TestObject>(
+                () => new TestObject { Key = index },
+                null,
+                obj => { obj.IsReturned = true; returnCount++; },
+                0,
+                5));
         var item = pool.Rent(1);
 
         pool.Return(1, item);
@@ -142,7 +144,7 @@ public sealed class IndexedObjectPoolTests
     [InlineData(3)]
     public void Return_InvalidKey_DoesNotThrow(int key)
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, k => new TestObject { Key = k }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
         var item = new TestObject { Key = key };
 
         pool.Return(key, item);
@@ -153,7 +155,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Count_ValidKey_ReturnsCorrectCount()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         pool.Return(1, new TestObject { Key = 1 });
         pool.Return(1, new TestObject { Key = 1 });
@@ -167,7 +169,7 @@ public sealed class IndexedObjectPoolTests
     [InlineData(3)]
     public void Count_InvalidKey_ReturnsZero(int key)
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, k => new TestObject { Key = k }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         Assert.Equal(0, pool.Count(key));
     }
@@ -175,7 +177,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void MaxSize_ValidKey_ReturnsCorrectMaxSize()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 0, 15);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 15));
 
         Assert.Equal(15, pool.MaxSize(0));
         Assert.Equal(15, pool.MaxSize(1));
@@ -187,7 +189,7 @@ public sealed class IndexedObjectPoolTests
     [InlineData(3)]
     public void MaxSize_InvalidKey_ReturnsZero(int key)
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, k => new TestObject { Key = k }, null, null, 0, 5);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         Assert.Equal(0, pool.MaxSize(key));
     }
@@ -195,7 +197,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Warm_ValidKey_PreAllocatesItems()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
 
         pool.Warm(1);
 
@@ -209,7 +211,7 @@ public sealed class IndexedObjectPoolTests
     [InlineData(3)]
     public void Warm_InvalidKey_ThrowsArgumentOutOfRangeException(int key)
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, k => new TestObject { Key = k }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => pool.Warm(key));
     }
@@ -217,7 +219,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Warm_NoParameters_PreAllocatesAllPools()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
 
         pool.Warm();
 
@@ -229,7 +231,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Clear_ValidKey_ClearsSpecificPool()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
         pool.Warm();
 
         pool.Clear(1);
@@ -244,7 +246,7 @@ public sealed class IndexedObjectPoolTests
     [InlineData(3)]
     public void Clear_InvalidKey_DoesNotThrow(int key)
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, k => new TestObject { Key = k }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
         pool.Warm();
 
         pool.Clear(key);
@@ -255,7 +257,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Clear_NoParameters_ClearsAllPools()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 5, 10);
+        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
         pool.Warm();
 
         pool.Clear();
@@ -268,7 +270,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Dispose_DisposesPool()
     {
-        var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 0, 5);
+        var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         pool.Dispose();
 
@@ -278,7 +280,7 @@ public sealed class IndexedObjectPoolTests
     [Fact]
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
-        var pool = new IndexedObjectPool<TestObject>(3, key => new TestObject { Key = key }, null, null, 0, 5);
+        var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
 
         pool.Dispose();
         pool.Dispose();

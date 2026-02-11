@@ -4,7 +4,7 @@ using Object = UnityEngine.Object;
 
 namespace GroveGames.ObjectPool.Unity
 {
-    public sealed class GameObjectPool : IGameObjectPool
+    public sealed class GameObjectPool : IObjectPool<GameObject>
     {
         private readonly ObjectPool<GameObject> _pool;
         private bool _disposed;

@@ -7,11 +7,11 @@ namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentMultiTypeObjectPoolBuilder<TBase> where TBase : class
 {
-    private readonly ConcurrentDictionary<Type, IObjectPool<TBase>> _poolsByType;
+    private readonly ConcurrentDictionary<Type, IConcurrentObjectPool<TBase>> _poolsByType;
 
     public ConcurrentMultiTypeObjectPoolBuilder()
     {
-        _poolsByType = new ConcurrentDictionary<Type, IObjectPool<TBase>>();
+        _poolsByType = new ConcurrentDictionary<Type, IConcurrentObjectPool<TBase>>();
     }
 
     public ConcurrentMultiTypeObjectPoolBuilder<TBase> AddPool<TDerived>(Func<TDerived> factory, Action<TDerived>? onRent, Action<TDerived>? onReturn, int initialSize, int maxSize) where TDerived : class, TBase
@@ -27,7 +27,7 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilder<TBase> where TBase : cl
         return this;
     }
 
-    public IReadOnlyDictionary<Type, IObjectPool<TBase>> Build()
+    public IReadOnlyDictionary<Type, IConcurrentObjectPool<TBase>> Build()
     {
         return _poolsByType.ToFrozenDictionary();
     }

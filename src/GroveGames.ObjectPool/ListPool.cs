@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
 
-public sealed class ListPool<T> : IListPool<T> where T : notnull
+public sealed class ListPool<T> : IObjectPool<List<T>> where T : notnull
 {
     private readonly ObjectPool<List<T>> _pool;
     private bool _disposed;

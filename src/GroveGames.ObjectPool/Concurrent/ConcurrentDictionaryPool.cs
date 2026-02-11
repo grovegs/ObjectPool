@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentDictionaryPool<TKey, TValue> : IDictionaryPool<TKey, TValue> where TKey : notnull
+public sealed class ConcurrentDictionaryPool<TKey, TValue> : IObjectPool<Dictionary<TKey, TValue>> where TKey : notnull
 {
     private readonly ConcurrentObjectPool<Dictionary<TKey, TValue>> _pool;
     private volatile int _disposed;
