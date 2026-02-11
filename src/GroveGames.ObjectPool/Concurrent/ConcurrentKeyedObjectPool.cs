@@ -1,32 +1,34 @@
-﻿using System;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 
-namespace GroveGames.ObjectPool;
+namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValue>
-    where TKey : notnull
+public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValue> 
+    where TKey : notnull 
     where TValue : class
 {
-    private readonly Dictionary<TKey, IObjectPool<TValue>> _pools;
-    private bool _disposed;
+    private readonly ConcurrentDictionary<TKey, IConcurrentObjectPool<TValue>> _pools;
+    private volatile int _disposed;
 
-    public KeyedObjectPool(IDictionary<TKey, IObjectPool<TValue>> pools)
+    public ConcurrentKeyedObjectPool(IDictionary<TKey, IConcurrentObjectPool<TValue>> pools)
     {
         ArgumentNullException.ThrowIfNull(pools);
 
-        _pools = new Dictionary<TKey, IObjectPool<TValue>>(pools);
+        _pools = new ConcurrentDictionary<TKey, IConcurrentObjectPool<TValue>>(pools);
 
         foreach (var kvp in _pools)
         {
             ArgumentNullException.ThrowIfNull(kvp.Value, nameof(pools));
         }
 
-        _disposed = false;
+        _disposed = 0;
     }
 
     public int Count(TKey key)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (!_pools.TryGetValue(key, out var pool))
         {
@@ -38,7 +40,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public int MaxSize(TKey key)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (!_pools.TryGetValue(key, out var pool))
         {
@@ -50,7 +52,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public TValue Rent(TKey key)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (!_pools.TryGetValue(key, out var pool))
         {
@@ -62,7 +64,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public void Return(TKey key, TValue item)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_pools.TryGetValue(key, out var pool))
         {
@@ -72,7 +74,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public void Warm(TKey key)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (!_pools.TryGetValue(key, out var pool))
         {
@@ -84,7 +86,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public void Warm()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         foreach (var pool in _pools.Values)
         {
@@ -94,7 +96,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public void Clear(TKey key)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_pools.TryGetValue(key, out var pool))
         {
@@ -104,7 +106,7 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public void Clear()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         foreach (var pool in _pools.Values)
         {
@@ -114,12 +116,10 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
     public void Dispose()
     {
-        if (_disposed)
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
         {
             return;
         }
-
-        _disposed = true;
 
         foreach (var pool in _pools.Values)
         {

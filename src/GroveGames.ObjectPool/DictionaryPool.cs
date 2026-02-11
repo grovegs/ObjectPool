@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
 
-public sealed class DictionaryPool<TKey, TValue> : IDictionaryPool<TKey, TValue> where TKey : notnull
+public sealed class DictionaryPool<TKey, TValue> : IObjectPool<Dictionary<TKey, TValue>> where TKey : notnull
 {
     private readonly ObjectPool<Dictionary<TKey, TValue>> _pool;
     private bool _disposed;

@@ -1,86 +1,84 @@
-﻿using System;
+using System;
 
 namespace GroveGames.ObjectPool;
 
-public sealed class IndexedObjectPool<TValue> : IIndexedObjectPool<TValue> where TValue : class
+public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
 {
-    private readonly ObjectPool<TValue>[] _pools;
+    private readonly IObjectPool<TValue>[] _pools;
     private bool _disposed;
 
-    public IndexedObjectPool(int poolCount, Func<int, TValue> factory, Action<TValue>? onRent, Action<TValue>? onReturn, int initialSize, int maxSize)
+    public IndexedObjectPool(int count, Func<int, IObjectPool<TValue>> factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(poolCount);
-        ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
-        _pools = new ObjectPool<TValue>[poolCount];
+        _pools = new IObjectPool<TValue>[count];
 
-        for (int i = 0; i < poolCount; i++)
+        for (var i = 0; i < count; i++)
         {
-            _pools[i] = new ObjectPool<TValue>(() => factory(i), onRent, onReturn, initialSize, maxSize);
+            _pools[i] = factory(i);
+            ArgumentNullException.ThrowIfNull(_pools[i], nameof(factory));
         }
 
         _disposed = false;
     }
 
-    public int Count(int key)
+    public int Count(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (key < 0 || key >= _pools.Length)
+        if (index < 0 || index >= _pools.Length)
         {
             return 0;
         }
 
-        return _pools[key].Count;
+        return _pools[index].Count;
     }
 
-    public int MaxSize(int key)
+    public int MaxSize(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (key < 0 || key >= _pools.Length)
+        if (index < 0 || index >= _pools.Length)
         {
             return 0;
         }
 
-        return _pools[key].MaxSize;
+        return _pools[index].MaxSize;
     }
 
-    public TValue Rent(int key)
+    public TValue Rent(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (key < 0 || key >= _pools.Length)
+        if (index < 0 || index >= _pools.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(key));
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        return _pools[key].Rent();
+        return _pools[index].Rent();
     }
 
-    public void Return(int key, TValue item)
+    public void Return(int index, TValue item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (key >= 0 && key < _pools.Length)
+        if (index >= 0 && index < _pools.Length)
         {
-            _pools[key].Return(item);
+            _pools[index].Return(item);
         }
     }
 
-    public void Warm(int key)
+    public void Warm(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (key < 0 || key >= _pools.Length)
+        if (index < 0 || index >= _pools.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(key));
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        _pools[key].Warm();
+        _pools[index].Warm();
     }
 
     public void Warm()
@@ -93,13 +91,13 @@ public sealed class IndexedObjectPool<TValue> : IIndexedObjectPool<TValue> where
         }
     }
 
-    public void Clear(int key)
+    public void Clear(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (key >= 0 && key < _pools.Length)
+        if (index >= 0 && index < _pools.Length)
         {
-            _pools[key].Clear();
+            _pools[index].Clear();
         }
     }
 

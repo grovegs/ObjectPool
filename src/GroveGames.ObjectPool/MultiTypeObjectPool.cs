@@ -54,6 +54,42 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
         }
     }
 
+    public void Warm<TDerived>() where TDerived : class, TBase
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var type = typeof(TDerived);
+
+        if (!_poolsByType.TryGetValue(type, out var pool))
+        {
+            throw new InvalidOperationException($"Type {typeof(TDerived).Name} is not registered.");
+        }
+
+        pool.Warm();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        foreach (var pool in _poolsByType.Values)
+        {
+            pool.Warm();
+        }
+    }
+
+    public void Clear<TDerived>() where TDerived : class, TBase
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var type = typeof(TDerived);
+
+        if (_poolsByType.TryGetValue(type, out var pool))
+        {
+            pool.Clear();
+        }
+    }
+
     public void Clear()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

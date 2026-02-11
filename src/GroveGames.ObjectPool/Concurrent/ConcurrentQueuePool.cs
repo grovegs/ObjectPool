@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentQueuePool<T> : IQueuePool<T> where T : notnull
+public sealed class ConcurrentQueuePool<T> : IObjectPool<Queue<T>> where T : notnull
 {
     private readonly ConcurrentObjectPool<Queue<T>> _pool;
     private volatile int _disposed;

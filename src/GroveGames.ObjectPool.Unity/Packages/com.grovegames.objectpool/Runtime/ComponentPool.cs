@@ -4,7 +4,7 @@ using Object = UnityEngine.Object;
 
 namespace GroveGames.ObjectPool.Unity
 {
-    public sealed class ComponentPool<T> : IComponentPool<T> where T : Component
+    public sealed class ComponentPool<T> : IObjectPool<T> where T : Component
     {
         private readonly ObjectPool<T> _pool;
         private bool _disposed;

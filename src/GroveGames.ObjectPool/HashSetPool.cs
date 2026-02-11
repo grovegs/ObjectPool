@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
 
-public sealed class HashSetPool<T> : IHashSetPool<T> where T : notnull
+public sealed class HashSetPool<T> : IObjectPool<HashSet<T>> where T : notnull
 {
     private readonly ObjectPool<HashSet<T>> _pool;
     private bool _disposed;

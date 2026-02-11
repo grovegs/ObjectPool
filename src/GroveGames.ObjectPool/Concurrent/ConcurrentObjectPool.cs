@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentObjectPool<T> : IObjectPool<T> where T : class
+public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T : class
 {
     private readonly ConcurrentQueue<T> _items;
     private readonly Func<T> _factory;

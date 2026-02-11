@@ -6,7 +6,7 @@ namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> where TBase : class
 {
-    private readonly IReadOnlyDictionary<Type, IObjectPool<TBase>> _poolsByType;
+    private readonly IReadOnlyDictionary<Type, IConcurrentObjectPool<TBase>> _poolsByType;
     private volatile int _disposed;
 
     public ConcurrentMultiTypeObjectPool(Action<ConcurrentMultiTypeObjectPoolBuilder<TBase>> configure)
@@ -52,6 +52,42 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
         if (_poolsByType.TryGetValue(type, out var pool))
         {
             pool.Return(item);
+        }
+    }
+
+    public void Warm<TDerived>() where TDerived : class, TBase
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        var type = typeof(TDerived);
+
+        if (!_poolsByType.TryGetValue(type, out var pool))
+        {
+            throw new InvalidOperationException($"Type {typeof(TDerived).Name} is not registered.");
+        }
+
+        pool.Warm();
+    }
+
+    public void Warm()
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        foreach (var pool in _poolsByType.Values)
+        {
+            pool.Warm();
+        }
+    }
+
+    public void Clear<TDerived>() where TDerived : class, TBase
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        var type = typeof(TDerived);
+
+        if (_poolsByType.TryGetValue(type, out var pool))
+        {
+            pool.Clear();
         }
     }
 
