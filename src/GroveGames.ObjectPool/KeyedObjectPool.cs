@@ -7,20 +7,16 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
     where TKey : notnull
     where TValue : class
 {
+    private readonly Func<TKey, IObjectPool<TValue>> _factory;
     private readonly Dictionary<TKey, IObjectPool<TValue>> _pools;
     private bool _disposed;
 
-    public KeyedObjectPool(IDictionary<TKey, IObjectPool<TValue>> pools)
+    public KeyedObjectPool(Func<TKey, IObjectPool<TValue>> factory)
     {
-        ArgumentNullException.ThrowIfNull(pools);
+        ArgumentNullException.ThrowIfNull(factory);
 
-        _pools = new Dictionary<TKey, IObjectPool<TValue>>(pools);
-
-        foreach (var kvp in _pools)
-        {
-            ArgumentNullException.ThrowIfNull(kvp.Value, nameof(pools));
-        }
-
+        _factory = factory;
+        _pools = [];
         _disposed = false;
     }
 
@@ -54,7 +50,9 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
         if (!_pools.TryGetValue(key, out var pool))
         {
-            throw new KeyNotFoundException($"No pool registered for key: {key}");
+            pool = _factory(key);
+            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+            _pools[key] = pool;
         }
 
         return pool.Rent();
@@ -64,10 +62,14 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_pools.TryGetValue(key, out var pool))
+        if (!_pools.TryGetValue(key, out var pool))
         {
-            pool.Return(item);
+            pool = _factory(key);
+            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+            _pools[key] = pool;
         }
+
+        pool.Return(item);
     }
 
     public void Warm(TKey key)
@@ -76,7 +78,9 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
 
         if (!_pools.TryGetValue(key, out var pool))
         {
-            throw new KeyNotFoundException($"No pool registered for key: {key}");
+            pool = _factory(key);
+            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+            _pools[key] = pool;
         }
 
         pool.Warm();

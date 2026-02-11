@@ -5,24 +5,20 @@ using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValue> 
-    where TKey : notnull 
+public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValue>
+    where TKey : notnull
     where TValue : class
 {
+    private readonly Func<TKey, IConcurrentObjectPool<TValue>> _factory;
     private readonly ConcurrentDictionary<TKey, IConcurrentObjectPool<TValue>> _pools;
     private volatile int _disposed;
 
-    public ConcurrentKeyedObjectPool(IDictionary<TKey, IConcurrentObjectPool<TValue>> pools)
+    public ConcurrentKeyedObjectPool(Func<TKey, IConcurrentObjectPool<TValue>> factory)
     {
-        ArgumentNullException.ThrowIfNull(pools);
+        ArgumentNullException.ThrowIfNull(factory);
 
-        _pools = new ConcurrentDictionary<TKey, IConcurrentObjectPool<TValue>>(pools);
-
-        foreach (var kvp in _pools)
-        {
-            ArgumentNullException.ThrowIfNull(kvp.Value, nameof(pools));
-        }
-
+        _factory = factory;
+        _pools = new ConcurrentDictionary<TKey, IConcurrentObjectPool<TValue>>();
         _disposed = 0;
     }
 
@@ -54,10 +50,12 @@ public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<T
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
+        var pool = _pools.GetOrAdd(key, k =>
         {
-            throw new KeyNotFoundException($"No pool registered for key: {key}");
-        }
+            var newPool = _factory(k);
+            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
+            return newPool;
+        });
 
         return pool.Rent();
     }
@@ -66,20 +64,26 @@ public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<T
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (_pools.TryGetValue(key, out var pool))
+        var pool = _pools.GetOrAdd(key, k =>
         {
-            pool.Return(item);
-        }
+            var newPool = _factory(k);
+            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
+            return newPool;
+        });
+
+        pool.Return(item);
     }
 
     public void Warm(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
+        var pool = _pools.GetOrAdd(key, k =>
         {
-            throw new KeyNotFoundException($"No pool registered for key: {key}");
-        }
+            var newPool = _factory(k);
+            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
+            return newPool;
+        });
 
         pool.Warm();
     }

@@ -1,92 +1,100 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
 {
-    private readonly IConcurrentObjectPool<TValue>[] _pools;
+    private readonly Func<int, IConcurrentObjectPool<TValue>> _factory;
+    private readonly ConcurrentDictionary<int, IConcurrentObjectPool<TValue>> _pools;
     private volatile int _disposed;
 
-    public ConcurrentIndexedObjectPool(int count, Func<int, IConcurrentObjectPool<TValue>> factory)
+    public ConcurrentIndexedObjectPool(Func<int, IConcurrentObjectPool<TValue>> factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
-        _pools = new IConcurrentObjectPool<TValue>[count];
-
-        for (var i = 0; i < count; i++)
-        {
-            _pools[i] = factory(i);
-            ArgumentNullException.ThrowIfNull(_pools[i], nameof(factory));
-        }
-
+        _factory = factory;
+        _pools = new ConcurrentDictionary<int, IConcurrentObjectPool<TValue>>();
         _disposed = 0;
     }
 
     public int Count(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
+        if (!_pools.TryGetValue(index, out var pool))
         {
             return 0;
         }
 
-        return _pools[index].Count;
+        return pool.Count;
     }
 
     public int MaxSize(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
+        if (!_pools.TryGetValue(index, out var pool))
         {
             return 0;
         }
 
-        return _pools[index].MaxSize;
+        return pool.MaxSize;
     }
 
     public TValue Rent(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
+        var pool = _pools.GetOrAdd(index, i =>
         {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
+            var newPool = _factory(i);
+            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
+            return newPool;
+        });
 
-        return _pools[index].Rent();
+        return pool.Rent();
     }
 
     public void Return(int index, TValue item)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index >= 0 && index < _pools.Length)
+        var pool = _pools.GetOrAdd(index, i =>
         {
-            _pools[index].Return(item);
-        }
+            var newPool = _factory(i);
+            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
+            return newPool;
+        });
+
+        pool.Return(item);
     }
 
     public void Warm(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
+        var pool = _pools.GetOrAdd(index, i =>
         {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
+            var newPool = _factory(i);
+            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
+            return newPool;
+        });
 
-        _pools[index].Warm();
+        pool.Warm();
     }
 
     public void Warm()
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Warm();
         }
@@ -95,10 +103,11 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
     public void Clear(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index >= 0 && index < _pools.Length)
+        if (_pools.TryGetValue(index, out var pool))
         {
-            _pools[index].Clear();
+            pool.Clear();
         }
     }
 
@@ -106,7 +115,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Clear();
         }
@@ -119,7 +128,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
             return;
         }
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Dispose();
         }
