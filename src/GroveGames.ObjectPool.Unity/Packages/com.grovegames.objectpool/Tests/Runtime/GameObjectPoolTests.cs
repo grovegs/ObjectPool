@@ -123,5 +123,95 @@ namespace GroveGames.ObjectPool.Unity.Tests
             UnityEngine.Object.DestroyImmediate(instance);
             UnityEngine.Object.DestroyImmediate(parent.gameObject);
         }
+
+        [Test]
+        public void Return_WhenPoolIsFull_DestroysItem()
+        {
+            using var pool = new GameObjectPool(_prefab, null, 0, 1);
+            var first = pool.Rent();
+            var second = pool.Rent();
+            pool.Return(first);
+
+            pool.Return(second);
+
+            Assert.That(pool.Count, Is.EqualTo(1));
+            Assert.That(second == null, Is.True);
+        }
+
+        [Test]
+        public void Return_ItemParentedElsewhere_MovesItBackUnderPoolParent()
+        {
+            var poolParent = new GameObject("PoolParent").transform;
+            var otherParent = new GameObject("OtherParent").transform;
+            using var pool = new GameObjectPool(_prefab, poolParent, 0, 10);
+            var item = pool.Rent();
+            item.transform.SetParent(otherParent);
+
+            pool.Return(item);
+
+            Assert.That(item.transform.parent, Is.EqualTo(poolParent));
+
+            UnityEngine.Object.DestroyImmediate(otherParent.gameObject);
+            Assert.That(item == null, Is.False);
+
+            UnityEngine.Object.DestroyImmediate(poolParent.gameObject);
+        }
+
+        [Test]
+        public void Warm_CreatesInactiveInstancesUpToMaxSize()
+        {
+            using var pool = new GameObjectPool(_prefab, null, 3, 4);
+
+            pool.Warm();
+            pool.Warm();
+
+            Assert.That(pool.Count, Is.EqualTo(4));
+            var item = pool.Rent();
+            pool.Return(item);
+            Assert.That(item.activeSelf, Is.False);
+        }
+
+        [Test]
+        public void Clear_DestroysPooledInstances()
+        {
+            var pool = new GameObjectPool(_prefab, null, 0, 10);
+            var item = pool.Rent();
+            pool.Return(item);
+
+            pool.Clear();
+
+            Assert.That(pool.Count, Is.EqualTo(0));
+            Assert.That(item == null, Is.True);
+
+            pool.Dispose();
+        }
+
+        [Test]
+        public void Dispose_DestroysPooledInstances()
+        {
+            var pool = new GameObjectPool(_prefab, null, 0, 10);
+            var item = pool.Rent();
+            pool.Return(item);
+
+            pool.Dispose();
+
+            Assert.That(item == null, Is.True);
+        }
+
+        [Test]
+        public void Rent_AfterPooledItemWasDestroyed_CreatesNewItem()
+        {
+            using var pool = new GameObjectPool(_prefab, null, 0, 10);
+            var destroyed = pool.Rent();
+            pool.Return(destroyed);
+            UnityEngine.Object.DestroyImmediate(destroyed);
+
+            var item = pool.Rent();
+
+            Assert.That(item == null, Is.False);
+            Assert.That(item.activeSelf, Is.True);
+
+            UnityEngine.Object.DestroyImmediate(item);
+        }
     }
 }

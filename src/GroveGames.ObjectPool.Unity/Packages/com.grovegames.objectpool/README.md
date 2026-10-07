@@ -442,6 +442,8 @@ public class EffectPlayer : MonoBehaviour
 
 - **`GameObjectPool`**: Pools GameObjects with automatic activation/deactivation
 - **`ComponentPool<T>`**: Pools Components with automatic activation/deactivation
+
+Unity pools own their instances: `Warm` creates them inactive and never beyond `maxSize`, `Return` moves an item back under the pool parent and destroys it when the pool is full, and `Clear`/`Dispose` destroy the pooled GameObjects.
 - **`KeyedGameObjectPool<TKey>`**: One `GameObjectPool` per key, created on first use
 - **`KeyedComponentPool<TKey, T>`**: One `ComponentPool<T>` per key, created on first use
 - **`IndexedGameObjectPool`**: One `GameObjectPool` per index, stored in an array
