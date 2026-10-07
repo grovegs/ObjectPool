@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -24,12 +24,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.Count;
+        return _pools.TryGetValue(index, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int index)
@@ -37,12 +32,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.MaxSize;
+        return _pools.TryGetValue(index, out var pool) ? pool.MaxSize : 0;
     }
 
     public TValue Rent(int index)
@@ -50,14 +40,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        var pool = _pools.GetOrAdd(index, i =>
-        {
-            var newPool = _factory(i);
-            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
-            return newPool;
-        });
-
-        return pool.Rent();
+        return GetOrCreatePool(index).Rent();
     }
 
     public void Return(int index, TValue item)
@@ -65,14 +48,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        var pool = _pools.GetOrAdd(index, i =>
-        {
-            var newPool = _factory(i);
-            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
-            return newPool;
-        });
-
-        pool.Return(item);
+        GetOrCreatePool(index).Return(item);
     }
 
     public void Warm(int index)
@@ -80,14 +56,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        var pool = _pools.GetOrAdd(index, i =>
-        {
-            var newPool = _factory(i);
-            ArgumentNullException.ThrowIfNull(newPool, nameof(_factory));
-            return newPool;
-        });
-
-        pool.Warm();
+        GetOrCreatePool(index).Warm();
     }
 
     public void Warm()
@@ -132,5 +101,26 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         {
             pool.Dispose();
         }
+
+        _pools.Clear();
+    }
+
+    private IConcurrentObjectPool<TValue> GetOrCreatePool(int index)
+    {
+        if (_pools.TryGetValue(index, out var pool))
+        {
+            return pool;
+        }
+
+        var created = _factory(index);
+        ArgumentNullException.ThrowIfNull(created, nameof(_factory));
+        pool = _pools.GetOrAdd(index, created);
+
+        if (!ReferenceEquals(pool, created))
+        {
+            created.Dispose();
+        }
+
+        return pool;
     }
 }

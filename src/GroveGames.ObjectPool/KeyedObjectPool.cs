@@ -24,66 +24,35 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.Count;
+        return _pools.TryGetValue(key, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.MaxSize;
+        return _pools.TryGetValue(key, out var pool) ? pool.MaxSize : 0;
     }
 
     public TValue Rent(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            pool = _factory(key);
-            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
-            _pools[key] = pool;
-        }
-
-        return pool.Rent();
+        return GetOrCreatePool(key).Rent();
     }
 
     public void Return(TKey key, TValue item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            pool = _factory(key);
-            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
-            _pools[key] = pool;
-        }
-
-        pool.Return(item);
+        GetOrCreatePool(key).Return(item);
     }
 
     public void Warm(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            pool = _factory(key);
-            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
-            _pools[key] = pool;
-        }
-
-        pool.Warm();
+        GetOrCreatePool(key).Warm();
     }
 
     public void Warm()
@@ -129,5 +98,20 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
         {
             pool.Dispose();
         }
+
+        _pools.Clear();
+    }
+
+    private IObjectPool<TValue> GetOrCreatePool(TKey key)
+    {
+        if (_pools.TryGetValue(key, out var pool))
+        {
+            return pool;
+        }
+
+        pool = _factory(key);
+        ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+        _pools.Add(key, pool);
+        return pool;
     }
 }

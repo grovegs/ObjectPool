@@ -146,6 +146,34 @@ multiPool.Return(zombie);
 multiPool.Return(skeleton);
 ```
 
+### Keyed Object Pool
+
+Keep one pool per key, created the first time a key is used:
+
+```csharp
+using GroveGames.ObjectPool;
+
+var bullets = new KeyedObjectPool<string, Bullet>(
+    kind => new ObjectPool<Bullet>(() => new Bullet(kind), null, bullet => bullet.Reset(), 5, 50)
+);
+
+var bullet = bullets.Rent("plasma");
+bullets.Return("plasma", bullet);
+
+bullets.Warm("laser");
+```
+
+`IndexedObjectPool<T>` works the same way with `int` keys, for keys that are indices into a table:
+
+```csharp
+var effects = new IndexedObjectPool<Effect>(
+    index => new ObjectPool<Effect>(() => new Effect(index), null, null, 0, 20)
+);
+
+var effect = effects.Rent(2);
+effects.Return(2, effect);
+```
+
 ### Core Components
 
 - **`IObjectPool<T>`**: Core pooling interface with Rent, Return, Clear, and Dispose
@@ -154,12 +182,17 @@ multiPool.Return(skeleton);
 - **`ListPool<T>`, `DictionaryPool<TKey, TValue>`, etc.**: Specialized collection pools
 - **`MultiTypeObjectPool<T>`**: Polymorphic pooling with frozen dictionary lookup
 - **`MultiTypeObjectPoolBuilder<T>`**: Fluent builder for multi-type pools
+- **`IKeyedObjectPool<TKey, TValue>`**: Interface for pools that keep one pool per key
+- **`KeyedObjectPool<TKey, TValue>`**: Creates a pool per key on first use through a factory
+- **`IndexedObjectPool<T>`**: Keyed pool with non-negative `int` keys
 
 ### Concurrent Components
 
 - **`ConcurrentObjectPool<T>`**: Thread-safe object pool
 - **`ConcurrentListPool<T>`, `ConcurrentDictionaryPool<TKey, TValue>`, etc.**: Thread-safe collection pools
 - **`ConcurrentMultiTypeObjectPool<T>`**: Thread-safe polymorphic pooling
+- **`ConcurrentKeyedObjectPool<TKey, TValue>`**: Thread-safe keyed pool
+- **`ConcurrentIndexedObjectPool<T>`**: Thread-safe indexed pool
 
 ## Unity
 
@@ -311,14 +344,55 @@ public class ProjectileSystem : MonoBehaviour
 }
 ```
 
+### KeyedComponentPool
+
+Pool several prefabs of the same component type, one pool per key:
+
+```csharp
+using GroveGames.ObjectPool.Unity;
+using UnityEngine;
+
+public class ShotSpawner : MonoBehaviour
+{
+    private KeyedComponentPool<Shot, Shot> _shots;
+
+    private void Awake()
+    {
+        _shots = new KeyedComponentPool<Shot, Shot>(static prefab => prefab, transform, 0, 32);
+    }
+
+    public Shot Spawn(Shot prefab)
+    {
+        return _shots.Rent(prefab);
+    }
+
+    public void Despawn(Shot prefab, Shot shot)
+    {
+        _shots.Return(prefab, shot);
+    }
+
+    private void OnDestroy()
+    {
+        _shots.Dispose();
+    }
+}
+```
+
+Keys do not have to be prefabs. Any key works as long as the provider returns the prefab for it:
+
+```csharp
+var effects = new KeyedGameObjectPool<string>(address => LoadPrefab(address), effectsRoot, 2, 16);
+
+var explosion = effects.Rent("Effects/Explosion");
+effects.Return("Effects/Explosion", explosion);
+```
+
 ### Unity Components
 
-- **`IGameObjectPool`**: Interface for GameObject pooling
 - **`GameObjectPool`**: Pools GameObjects with automatic activation/deactivation
-- **`GameObjectRental`**: Ref struct for automatic GameObject return
-- **`IComponentPool<T>`**: Interface for Component pooling
 - **`ComponentPool<T>`**: Pools Components with automatic activation/deactivation
-- **`ComponentRental<T>`**: Ref struct for automatic Component return
+- **`KeyedGameObjectPool<TKey>`**: One `GameObjectPool` per key, created on first use
+- **`KeyedComponentPool<TKey, T>`**: One `ComponentPool<T>` per key, created on first use
 
 ## Godot
 

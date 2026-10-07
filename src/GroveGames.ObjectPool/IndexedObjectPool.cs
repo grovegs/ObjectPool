@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
@@ -23,12 +23,7 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.Count;
+        return _pools.TryGetValue(index, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int index)
@@ -36,12 +31,7 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.MaxSize;
+        return _pools.TryGetValue(index, out var pool) ? pool.MaxSize : 0;
     }
 
     public TValue Rent(int index)
@@ -49,14 +39,7 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            pool = _factory(index);
-            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
-            _pools[index] = pool;
-        }
-
-        return pool.Rent();
+        return GetOrCreatePool(index).Rent();
     }
 
     public void Return(int index, TValue item)
@@ -64,14 +47,7 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            pool = _factory(index);
-            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
-            _pools[index] = pool;
-        }
-
-        pool.Return(item);
+        GetOrCreatePool(index).Return(item);
     }
 
     public void Warm(int index)
@@ -79,14 +55,7 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (!_pools.TryGetValue(index, out var pool))
-        {
-            pool = _factory(index);
-            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
-            _pools[index] = pool;
-        }
-
-        pool.Warm();
+        GetOrCreatePool(index).Warm();
     }
 
     public void Warm()
@@ -133,5 +102,20 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
         {
             pool.Dispose();
         }
+
+        _pools.Clear();
+    }
+
+    private IObjectPool<TValue> GetOrCreatePool(int index)
+    {
+        if (_pools.TryGetValue(index, out var pool))
+        {
+            return pool;
+        }
+
+        pool = _factory(index);
+        ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+        _pools.Add(index, pool);
+        return pool;
     }
 }

@@ -113,7 +113,7 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilderTests
 
         // Assert
         Assert.Empty(result);
-        Assert.IsAssignableFrom<System.Collections.Frozen.FrozenDictionary<Type, IObjectPool<BuilderTestBase>>>(result);
+        Assert.IsAssignableFrom<System.Collections.Frozen.FrozenDictionary<Type, IConcurrentObjectPool<BuilderTestBase>>>(result);
     }
 
     [Fact]
