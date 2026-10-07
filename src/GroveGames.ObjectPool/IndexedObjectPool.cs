@@ -1,91 +1,68 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 
 namespace GroveGames.ObjectPool;
 
 public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
 {
-    private readonly IObjectPool<TValue>[] _pools;
+    private readonly Func<int, IObjectPool<TValue>> _factory;
+    private readonly Dictionary<int, IObjectPool<TValue>> _pools;
     private bool _disposed;
 
-    public IndexedObjectPool(int count, Func<int, IObjectPool<TValue>> factory)
+    public IndexedObjectPool(Func<int, IObjectPool<TValue>> factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
-        _pools = new IObjectPool<TValue>[count];
-
-        for (var i = 0; i < count; i++)
-        {
-            _pools[i] = factory(i);
-            ArgumentNullException.ThrowIfNull(_pools[i], nameof(factory));
-        }
-
+        _factory = factory;
+        _pools = [];
         _disposed = false;
     }
 
     public int Count(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            return 0;
-        }
-
-        return _pools[index].Count;
+        return _pools.TryGetValue(index, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            return 0;
-        }
-
-        return _pools[index].MaxSize;
+        return _pools.TryGetValue(index, out var pool) ? pool.MaxSize : 0;
     }
 
     public TValue Rent(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
-
-        return _pools[index].Rent();
+        return GetOrCreatePool(index).Rent();
     }
 
     public void Return(int index, TValue item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index >= 0 && index < _pools.Length)
-        {
-            _pools[index].Return(item);
-        }
+        GetOrCreatePool(index).Return(item);
     }
 
     public void Warm(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
-
-        _pools[index].Warm();
+        GetOrCreatePool(index).Warm();
     }
 
     public void Warm()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Warm();
         }
@@ -94,10 +71,11 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
     public void Clear(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index >= 0 && index < _pools.Length)
+        if (_pools.TryGetValue(index, out var pool))
         {
-            _pools[index].Clear();
+            pool.Clear();
         }
     }
 
@@ -105,7 +83,7 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Clear();
         }
@@ -120,9 +98,24 @@ public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> wh
 
         _disposed = true;
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Dispose();
         }
+
+        _pools.Clear();
+    }
+
+    private IObjectPool<TValue> GetOrCreatePool(int index)
+    {
+        if (_pools.TryGetValue(index, out var pool))
+        {
+            return pool;
+        }
+
+        pool = _factory(index);
+        ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+        _pools.Add(index, pool);
+        return pool;
     }
 }

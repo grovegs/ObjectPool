@@ -1,92 +1,69 @@
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
 {
-    private readonly IConcurrentObjectPool<TValue>[] _pools;
+    private readonly Func<int, IConcurrentObjectPool<TValue>> _factory;
+    private readonly ConcurrentDictionary<int, IConcurrentObjectPool<TValue>> _pools;
     private volatile int _disposed;
 
-    public ConcurrentIndexedObjectPool(int count, Func<int, IConcurrentObjectPool<TValue>> factory)
+    public ConcurrentIndexedObjectPool(Func<int, IConcurrentObjectPool<TValue>> factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
-        _pools = new IConcurrentObjectPool<TValue>[count];
-
-        for (var i = 0; i < count; i++)
-        {
-            _pools[i] = factory(i);
-            ArgumentNullException.ThrowIfNull(_pools[i], nameof(factory));
-        }
-
+        _factory = factory;
+        _pools = new ConcurrentDictionary<int, IConcurrentObjectPool<TValue>>();
         _disposed = 0;
     }
 
     public int Count(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            return 0;
-        }
-
-        return _pools[index].Count;
+        return _pools.TryGetValue(index, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            return 0;
-        }
-
-        return _pools[index].MaxSize;
+        return _pools.TryGetValue(index, out var pool) ? pool.MaxSize : 0;
     }
 
     public TValue Rent(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
-
-        return _pools[index].Rent();
+        return GetOrCreatePool(index).Rent();
     }
 
     public void Return(int index, TValue item)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index >= 0 && index < _pools.Length)
-        {
-            _pools[index].Return(item);
-        }
+        GetOrCreatePool(index).Return(item);
     }
 
     public void Warm(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index < 0 || index >= _pools.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
-
-        _pools[index].Warm();
+        GetOrCreatePool(index).Warm();
     }
 
     public void Warm()
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Warm();
         }
@@ -95,10 +72,11 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
     public void Clear(int index)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (index >= 0 && index < _pools.Length)
+        if (_pools.TryGetValue(index, out var pool))
         {
-            _pools[index].Clear();
+            pool.Clear();
         }
     }
 
@@ -106,7 +84,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Clear();
         }
@@ -119,9 +97,30 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
             return;
         }
 
-        foreach (var pool in _pools)
+        foreach (var pool in _pools.Values)
         {
             pool.Dispose();
         }
+
+        _pools.Clear();
+    }
+
+    private IConcurrentObjectPool<TValue> GetOrCreatePool(int index)
+    {
+        if (_pools.TryGetValue(index, out var pool))
+        {
+            return pool;
+        }
+
+        var created = _factory(index);
+        ArgumentNullException.ThrowIfNull(created, nameof(_factory));
+        pool = _pools.GetOrAdd(index, created);
+
+        if (!ReferenceEquals(pool, created))
+        {
+            created.Dispose();
+        }
+
+        return pool;
     }
 }

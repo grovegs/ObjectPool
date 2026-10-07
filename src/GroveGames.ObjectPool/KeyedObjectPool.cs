@@ -7,20 +7,16 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
     where TKey : notnull
     where TValue : class
 {
+    private readonly Func<TKey, IObjectPool<TValue>> _factory;
     private readonly Dictionary<TKey, IObjectPool<TValue>> _pools;
     private bool _disposed;
 
-    public KeyedObjectPool(IDictionary<TKey, IObjectPool<TValue>> pools)
+    public KeyedObjectPool(Func<TKey, IObjectPool<TValue>> factory)
     {
-        ArgumentNullException.ThrowIfNull(pools);
+        ArgumentNullException.ThrowIfNull(factory);
 
-        _pools = new Dictionary<TKey, IObjectPool<TValue>>(pools);
-
-        foreach (var kvp in _pools)
-        {
-            ArgumentNullException.ThrowIfNull(kvp.Value, nameof(pools));
-        }
-
+        _factory = factory;
+        _pools = [];
         _disposed = false;
     }
 
@@ -28,58 +24,35 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.Count;
+        return _pools.TryGetValue(key, out var pool) ? pool.Count : 0;
     }
 
     public int MaxSize(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            return 0;
-        }
-
-        return pool.MaxSize;
+        return _pools.TryGetValue(key, out var pool) ? pool.MaxSize : 0;
     }
 
     public TValue Rent(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            throw new KeyNotFoundException($"No pool registered for key: {key}");
-        }
-
-        return pool.Rent();
+        return GetOrCreatePool(key).Rent();
     }
 
     public void Return(TKey key, TValue item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_pools.TryGetValue(key, out var pool))
-        {
-            pool.Return(item);
-        }
+        GetOrCreatePool(key).Return(item);
     }
 
     public void Warm(TKey key)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_pools.TryGetValue(key, out var pool))
-        {
-            throw new KeyNotFoundException($"No pool registered for key: {key}");
-        }
-
-        pool.Warm();
+        GetOrCreatePool(key).Warm();
     }
 
     public void Warm()
@@ -125,5 +98,20 @@ public sealed class KeyedObjectPool<TKey, TValue> : IKeyedObjectPool<TKey, TValu
         {
             pool.Dispose();
         }
+
+        _pools.Clear();
+    }
+
+    private IObjectPool<TValue> GetOrCreatePool(TKey key)
+    {
+        if (_pools.TryGetValue(key, out var pool))
+        {
+            return pool;
+        }
+
+        pool = _factory(key);
+        ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+        _pools.Add(key, pool);
+        return pool;
     }
 }

@@ -11,278 +11,282 @@ public sealed class IndexedObjectPoolTests
         public bool IsReturned { get; set; }
     }
 
-    [Fact]
-    public void Constructor_ValidParameters_CreatesPool()
+    private sealed class TestPool : IObjectPool<TestObject>
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
+        public bool IsDisposed { get; private set; }
 
-        Assert.Equal(0, pool.Count(0));
-        Assert.Equal(10, pool.MaxSize(0));
-        Assert.Equal(0, pool.Count(1));
-        Assert.Equal(10, pool.MaxSize(1));
-        Assert.Equal(0, pool.Count(2));
-        Assert.Equal(10, pool.MaxSize(2));
+        public int Count => 0;
+
+        public int MaxSize => 1;
+
+        public TestObject Rent()
+        {
+            return new TestObject();
+        }
+
+        public void Return(TestObject item)
+        {
+        }
+
+        public void Clear()
+        {
+        }
+
+        public void Warm()
+        {
+        }
+
+        public void Dispose()
+        {
+            IsDisposed = true;
+        }
     }
 
     [Fact]
     public void Constructor_NullFactory_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new IndexedObjectPool<TestObject>(3, null!));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public void Constructor_NonPositivePoolCount_ThrowsArgumentOutOfRangeException(int poolCount)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(poolCount, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10)));
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(-5)]
-    public void Constructor_NegativeInitialSize_ThrowsArgumentOutOfRangeException(int initialSize)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, initialSize, 10)));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public void Constructor_NonPositiveMaxSize_ThrowsArgumentOutOfRangeException(int maxSize)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, maxSize)));
+        Assert.Throws<ArgumentNullException>(() => new IndexedObjectPool<TestObject>(null!));
     }
 
     [Fact]
-    public void Constructor_InitialSizeGreaterThanMaxSize_ThrowsArgumentOutOfRangeException()
+    public void Count_UnusedKey_ReturnsZero()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 15, 10)));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+
+        Assert.Equal(0, pool.Count(0));
     }
 
     [Fact]
-    public void Rent_ValidKey_ReturnsObjectWithCorrectKey()
+    public void MaxSize_UnusedKey_ReturnsZero()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
 
-        var item0 = pool.Rent(0);
-        var item1 = pool.Rent(1);
-        var item2 = pool.Rent(2);
+        Assert.Equal(0, pool.MaxSize(0));
+    }
 
-        Assert.Equal(0, item0.Key);
-        Assert.Equal(1, item1.Key);
-        Assert.Equal(2, item2.Key);
+    [Fact]
+    public void MaxSize_UsedKey_ReturnsPoolMaxSize()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 15));
+
+        pool.Rent(0);
+
+        Assert.Equal(15, pool.MaxSize(0));
+    }
+
+    [Fact]
+    public void Rent_NewKey_ReturnsItemFromKeyPool()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+
+        var item = pool.Rent(1);
+
+        Assert.Equal(1, item.Key);
+    }
+
+    [Fact]
+    public void Rent_SameKeyTwice_InvokesFactoryOnce()
+    {
+        var factoryCalls = 0;
+        using var pool = new IndexedObjectPool<TestObject>(key =>
+        {
+            factoryCalls++;
+            return new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5);
+        });
+
+        pool.Rent(0);
+        pool.Rent(0);
+
+        Assert.Equal(1, factoryCalls);
+    }
+
+    [Fact]
+    public void Rent_DifferentKeys_UsesSeparatePools()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+
+        var first = pool.Rent(0);
+        var second = pool.Rent(1);
+        pool.Return(0, first);
+
+        Assert.Equal(0, first.Key);
+        Assert.Equal(1, second.Key);
+        Assert.Equal(1, pool.Count(0));
+        Assert.Equal(0, pool.Count(1));
+    }
+
+    [Fact]
+    public void Rent_FactoryReturnsNull_ThrowsArgumentNullException()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(_ => null!);
+
+        Assert.Throws<ArgumentNullException>(() => pool.Rent(0));
     }
 
     [Fact]
     public void Rent_WithOnRentCallback_InvokesCallback()
     {
-        int rentCount = 0;
-        using var pool = new IndexedObjectPool<TestObject>(
-            3,
-            index => new ObjectPool<TestObject>(
-                () => new TestObject { Key = index },
-                obj => { obj.IsRented = true; rentCount++; },
-                null,
-                0,
-                5));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, static item => item.IsRented = true, null, 0, 5));
 
-        var item = pool.Rent(1);
+        var item = pool.Rent(0);
 
         Assert.True(item.IsRented);
-        Assert.Equal(1, rentCount);
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(3)]
-    [InlineData(10)]
-    public void Rent_InvalidKey_ThrowsArgumentOutOfRangeException(int key)
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => pool.Rent(key));
     }
 
     [Fact]
     public void Return_ItemToPool_AddsToPool()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
-        var item = pool.Rent(1);
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        var item = pool.Rent(0);
 
-        pool.Return(1, item);
+        pool.Return(0, item);
 
-        Assert.Equal(1, pool.Count(1));
+        Assert.Equal(1, pool.Count(0));
     }
 
     [Fact]
     public void Return_WithOnReturnCallback_InvokesCallback()
     {
-        int returnCount = 0;
-        using var pool = new IndexedObjectPool<TestObject>(
-            3,
-            index => new ObjectPool<TestObject>(
-                () => new TestObject { Key = index },
-                null,
-                obj => { obj.IsReturned = true; returnCount++; },
-                0,
-                5));
-        var item = pool.Rent(1);
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, static item => item.IsReturned = true, 0, 5));
+        var item = pool.Rent(0);
 
-        pool.Return(1, item);
+        pool.Return(0, item);
 
         Assert.True(item.IsReturned);
-        Assert.Equal(1, returnCount);
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(3)]
-    public void Return_InvalidKey_DoesNotThrow(int key)
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
-        var item = new TestObject { Key = key };
-
-        pool.Return(key, item);
-
-        Assert.Equal(0, pool.Count(0));
     }
 
     [Fact]
-    public void Count_ValidKey_ReturnsCorrectCount()
+    public void Return_UnusedKey_CreatesPoolAndStoresItem()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
 
-        pool.Return(1, new TestObject { Key = 1 });
-        pool.Return(1, new TestObject { Key = 1 });
+        pool.Return(2, new TestObject { Key = 2 });
 
-        Assert.Equal(2, pool.Count(1));
-        Assert.Equal(0, pool.Count(0));
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(3)]
-    public void Count_InvalidKey_ReturnsZero(int key)
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
-
-        Assert.Equal(0, pool.Count(key));
+        Assert.Equal(1, pool.Count(2));
     }
 
     [Fact]
-    public void MaxSize_ValidKey_ReturnsCorrectMaxSize()
+    public void Warm_Key_PreAllocatesItems()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 15));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
 
-        Assert.Equal(15, pool.MaxSize(0));
-        Assert.Equal(15, pool.MaxSize(1));
-        Assert.Equal(15, pool.MaxSize(2));
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(3)]
-    public void MaxSize_InvalidKey_ReturnsZero(int key)
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
-
-        Assert.Equal(0, pool.MaxSize(key));
-    }
-
-    [Fact]
-    public void Warm_ValidKey_PreAllocatesItems()
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
-
-        pool.Warm(1);
-
-        Assert.Equal(5, pool.Count(1));
-        Assert.Equal(0, pool.Count(0));
-        Assert.Equal(0, pool.Count(2));
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(3)]
-    public void Warm_InvalidKey_ThrowsArgumentOutOfRangeException(int key)
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => pool.Warm(key));
-    }
-
-    [Fact]
-    public void Warm_NoParameters_PreAllocatesAllPools()
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
-
-        pool.Warm();
-
-        Assert.Equal(5, pool.Count(0));
-        Assert.Equal(5, pool.Count(1));
-        Assert.Equal(5, pool.Count(2));
-    }
-
-    [Fact]
-    public void Clear_ValidKey_ClearsSpecificPool()
-    {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
-        pool.Warm();
-
-        pool.Clear(1);
+        pool.Warm(0);
 
         Assert.Equal(5, pool.Count(0));
         Assert.Equal(0, pool.Count(1));
-        Assert.Equal(5, pool.Count(2));
     }
 
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(3)]
-    public void Clear_InvalidKey_DoesNotThrow(int key)
+    [Fact]
+    public void Warm_NoParameters_WarmsCreatedPools()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        pool.Rent(0);
+        pool.Rent(1);
+
         pool.Warm();
 
-        pool.Clear(key);
-
         Assert.Equal(5, pool.Count(0));
+        Assert.Equal(5, pool.Count(1));
+        Assert.Equal(0, pool.Count(2));
+    }
+
+    [Fact]
+    public void Clear_Key_ClearsOnlyThatPool()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        pool.Warm(0);
+        pool.Warm(1);
+
+        pool.Clear(0);
+
+        Assert.Equal(0, pool.Count(0));
+        Assert.Equal(5, pool.Count(1));
+    }
+
+    [Fact]
+    public void Clear_UnusedKey_DoesNotCreatePool()
+    {
+        var factoryCalls = 0;
+        using var pool = new IndexedObjectPool<TestObject>(key =>
+        {
+            factoryCalls++;
+            return new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5);
+        });
+
+        pool.Clear(0);
+
+        Assert.Equal(0, factoryCalls);
     }
 
     [Fact]
     public void Clear_NoParameters_ClearsAllPools()
     {
-        using var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 5, 10));
-        pool.Warm();
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        pool.Warm(0);
+        pool.Warm(1);
 
         pool.Clear();
 
         Assert.Equal(0, pool.Count(0));
         Assert.Equal(0, pool.Count(1));
-        Assert.Equal(0, pool.Count(2));
     }
 
     [Fact]
-    public void Dispose_DisposesPool()
+    public void Dispose_CreatedPools_DisposesEachPool()
     {
-        var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
+        var created = new TestPool[2];
+        var index = 0;
+        var pool = new IndexedObjectPool<TestObject>(_ => created[index++] = new TestPool());
+        pool.Rent(0);
+        pool.Rent(1);
 
+        pool.Dispose();
+
+        Assert.True(created[0].IsDisposed);
+        Assert.True(created[1].IsDisposed);
+    }
+
+    [Fact]
+    public void Dispose_CalledMultipleTimes_DoesNotThrow()
+    {
+        var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+
+        pool.Dispose();
+        pool.Dispose();
+    }
+
+    [Fact]
+    public void Rent_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
         pool.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => pool.Rent(0));
     }
 
     [Fact]
-    public void Dispose_CalledMultipleTimes_DoesNotThrow()
+    public void Rent_NegativeIndex_ThrowsArgumentOutOfRangeException()
     {
-        var pool = new IndexedObjectPool<TestObject>(3, index => new ObjectPool<TestObject>(() => new TestObject { Key = index }, null, null, 0, 5));
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
 
-        pool.Dispose();
-        pool.Dispose();
+        Assert.Throws<ArgumentOutOfRangeException>(() => pool.Rent(-1));
+    }
+
+    [Fact]
+    public void Count_NegativeIndex_ThrowsArgumentOutOfRangeException()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => pool.Count(-1));
+    }
+
+    [Fact]
+    public void Rent_LargeIndex_CreatesPool()
+    {
+        using var pool = new IndexedObjectPool<TestObject>(key => new ObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+
+        var item = pool.Rent(1000);
+
+        Assert.Equal(1000, item.Key);
     }
 }
