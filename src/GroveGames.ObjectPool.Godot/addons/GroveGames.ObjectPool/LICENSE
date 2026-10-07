@@ -163,16 +163,25 @@ bullets.Return("plasma", bullet);
 bullets.Warm("laser");
 ```
 
-`IndexedObjectPool<T>` works the same way with `int` keys, for keys that are indices into a table:
+`IndexedObjectPool<T>` takes non-negative `int` keys and stores its pools in an array, so a lookup is a bounds check and an array read instead of a dictionary lookup. It suits dense indices, such as a table of prefabs or an enum whose values start at zero:
 
 ```csharp
+public enum EffectKind
+{
+    Explosion,
+    Smoke,
+    Spark
+}
+
 var effects = new IndexedObjectPool<Effect>(
-    index => new ObjectPool<Effect>(() => new Effect(index), null, null, 0, 20)
+    index => new ObjectPool<Effect>(() => new Effect((EffectKind)index), null, null, 0, 20)
 );
 
-var effect = effects.Rent(2);
-effects.Return(2, effect);
+var smoke = effects.Rent((int)EffectKind.Smoke);
+effects.Return((int)EffectKind.Smoke, smoke);
 ```
+
+The array grows to the highest index used, so keep indices dense: an enum value of `1000` allocates 1001 slots.
 
 ### Core Components
 
@@ -184,7 +193,7 @@ effects.Return(2, effect);
 - **`MultiTypeObjectPoolBuilder<T>`**: Fluent builder for multi-type pools
 - **`IKeyedObjectPool<TKey, TValue>`**: Interface for pools that keep one pool per key
 - **`KeyedObjectPool<TKey, TValue>`**: Creates a pool per key on first use through a factory
-- **`IndexedObjectPool<T>`**: Keyed pool with non-negative `int` keys
+- **`IndexedObjectPool<T>`**: Array-backed keyed pool with non-negative `int` keys
 
 ### Concurrent Components
 
@@ -192,7 +201,7 @@ effects.Return(2, effect);
 - **`ConcurrentListPool<T>`, `ConcurrentDictionaryPool<TKey, TValue>`, etc.**: Thread-safe collection pools
 - **`ConcurrentMultiTypeObjectPool<T>`**: Thread-safe polymorphic pooling
 - **`ConcurrentKeyedObjectPool<TKey, TValue>`**: Thread-safe keyed pool
-- **`ConcurrentIndexedObjectPool<T>`**: Thread-safe indexed pool
+- **`ConcurrentIndexedObjectPool<T>`**: Thread-safe array-backed indexed pool with lock-free lookups
 
 ## Unity
 
@@ -387,12 +396,56 @@ var explosion = effects.Rent("Effects/Explosion");
 effects.Return("Effects/Explosion", explosion);
 ```
 
+### IndexedComponentPool
+
+Use an index, such as an enum value, when prefabs live in a table:
+
+```csharp
+using GroveGames.ObjectPool.Unity;
+using UnityEngine;
+
+public enum EffectKind
+{
+    Explosion,
+    Smoke
+}
+
+public class EffectPlayer : MonoBehaviour
+{
+    [SerializeField] private ParticleSystem[] _effectPrefabs;
+
+    private IndexedComponentPool<ParticleSystem> _effects;
+
+    private void Awake()
+    {
+        _effects = new IndexedComponentPool<ParticleSystem>(index => _effectPrefabs[index], transform, 2, 16);
+    }
+
+    public ParticleSystem Play(EffectKind kind)
+    {
+        return _effects.Rent((int)kind);
+    }
+
+    public void Stop(EffectKind kind, ParticleSystem effect)
+    {
+        _effects.Return((int)kind, effect);
+    }
+
+    private void OnDestroy()
+    {
+        _effects.Dispose();
+    }
+}
+```
+
 ### Unity Components
 
 - **`GameObjectPool`**: Pools GameObjects with automatic activation/deactivation
 - **`ComponentPool<T>`**: Pools Components with automatic activation/deactivation
 - **`KeyedGameObjectPool<TKey>`**: One `GameObjectPool` per key, created on first use
 - **`KeyedComponentPool<TKey, T>`**: One `ComponentPool<T>` per key, created on first use
+- **`IndexedGameObjectPool`**: One `GameObjectPool` per index, stored in an array
+- **`IndexedComponentPool<T>`**: One `ComponentPool<T>` per index, stored in an array
 
 ## Godot
 
