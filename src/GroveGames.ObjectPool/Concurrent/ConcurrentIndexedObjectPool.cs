@@ -1,13 +1,15 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
 public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
 {
+    private const int InitialCapacity = 4;
+
     private readonly Func<int, IConcurrentObjectPool<TValue>> _factory;
-    private readonly ConcurrentDictionary<int, IConcurrentObjectPool<TValue>> _pools;
+    private readonly object _lock;
+    private IConcurrentObjectPool<TValue>?[] _pools;
     private volatile int _disposed;
 
     public ConcurrentIndexedObjectPool(Func<int, IConcurrentObjectPool<TValue>> factory)
@@ -15,7 +17,8 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ArgumentNullException.ThrowIfNull(factory);
 
         _factory = factory;
-        _pools = new ConcurrentDictionary<int, IConcurrentObjectPool<TValue>>();
+        _lock = new object();
+        _pools = new IConcurrentObjectPool<TValue>?[InitialCapacity];
         _disposed = 0;
     }
 
@@ -24,7 +27,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        return _pools.TryGetValue(index, out var pool) ? pool.Count : 0;
+        return GetPool(index)?.Count ?? 0;
     }
 
     public int MaxSize(int index)
@@ -32,7 +35,7 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        return _pools.TryGetValue(index, out var pool) ? pool.MaxSize : 0;
+        return GetPool(index)?.MaxSize ?? 0;
     }
 
     public TValue Rent(int index)
@@ -63,9 +66,11 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _pools.Values)
+        var pools = Volatile.Read(ref _pools);
+
+        for (var i = 0; i < pools.Length; i++)
         {
-            pool.Warm();
+            Volatile.Read(ref pools[i])?.Warm();
         }
     }
 
@@ -74,19 +79,18 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (_pools.TryGetValue(index, out var pool))
-        {
-            pool.Clear();
-        }
+        GetPool(index)?.Clear();
     }
 
     public void Clear()
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        foreach (var pool in _pools.Values)
+        var pools = Volatile.Read(ref _pools);
+
+        for (var i = 0; i < pools.Length; i++)
         {
-            pool.Clear();
+            Volatile.Read(ref pools[i])?.Clear();
         }
     }
 
@@ -97,30 +101,56 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, 
             return;
         }
 
-        foreach (var pool in _pools.Values)
+        lock (_lock)
         {
-            pool.Dispose();
-        }
+            var pools = _pools;
 
-        _pools.Clear();
+            for (var i = 0; i < pools.Length; i++)
+            {
+                pools[i]?.Dispose();
+                pools[i] = null;
+            }
+        }
+    }
+
+    private IConcurrentObjectPool<TValue>? GetPool(int index)
+    {
+        var pools = Volatile.Read(ref _pools);
+        return index < pools.Length ? Volatile.Read(ref pools[index]) : null;
     }
 
     private IConcurrentObjectPool<TValue> GetOrCreatePool(int index)
     {
-        if (_pools.TryGetValue(index, out var pool))
+        var existing = GetPool(index);
+
+        if (existing != null)
         {
+            return existing;
+        }
+
+        lock (_lock)
+        {
+            var pools = _pools;
+
+            if (index >= pools.Length)
+            {
+                var grown = new IConcurrentObjectPool<TValue>?[Math.Max(index + 1, pools.Length * 2)];
+                Array.Copy(pools, grown, pools.Length);
+                Volatile.Write(ref _pools, grown);
+                pools = grown;
+            }
+
+            var pool = pools[index];
+
+            if (pool != null)
+            {
+                return pool;
+            }
+
+            pool = _factory(index);
+            ArgumentNullException.ThrowIfNull(pool, nameof(_factory));
+            Volatile.Write(ref pools[index], pool);
             return pool;
         }
-
-        var created = _factory(index);
-        ArgumentNullException.ThrowIfNull(created, nameof(_factory));
-        pool = _pools.GetOrAdd(index, created);
-
-        if (!ReferenceEquals(pool, created))
-        {
-            created.Dispose();
-        }
-
-        return pool;
     }
 }

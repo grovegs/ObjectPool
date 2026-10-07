@@ -285,6 +285,20 @@ public sealed class ConcurrentIndexedObjectPoolTests
     }
 
     [Fact]
+    public void Rent_IndexBeyondCapacity_KeepsEarlierPools()
+    {
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        var first = pool.Rent(1);
+        pool.Return(1, first);
+
+        var far = pool.Rent(64);
+
+        Assert.Equal(64, far.Key);
+        Assert.Equal(1, pool.Count(1));
+        Assert.Same(first, pool.Rent(1));
+    }
+
+    [Fact]
     public void Rent_LargeIndex_CreatesPool()
     {
         using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
