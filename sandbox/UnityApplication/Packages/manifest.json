@@ -11,9 +11,7 @@
     {
       "name": "package.openupm.com",
       "url": "https://package.openupm.com",
-      "scopes": [
-        "com.github-glitchenzo.nugetforunity"
-      ],
+      "scopes": ["com.github-glitchenzo.nugetforunity"],
       "overrideBuiltIns": true
     }
   ]
