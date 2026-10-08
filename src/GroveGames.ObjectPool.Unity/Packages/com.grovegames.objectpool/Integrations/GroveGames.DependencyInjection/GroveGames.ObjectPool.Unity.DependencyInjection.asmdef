@@ -1,0 +1,28 @@
+{
+    "name": "GroveGames.ObjectPool.Unity.DependencyInjection",
+    "rootNamespace": "GroveGames.ObjectPool.Unity",
+    "references": [
+        "GUID:5b69e4e4fadb46bba04a92f0a48f88fe",
+        "GUID:680da9f8e63646ddb3c20c2f4045387d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "GroveGames.ObjectPool.dll",
+        "GroveGames.DependencyInjection.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "GROVEGAMES_DEPENDENCYINJECTION"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.grovegames.dependencyinjection",
+            "expression": "0.6.0",
+            "define": "GROVEGAMES_DEPENDENCYINJECTION"
+        }
+    ],
+    "noEngineReferences": false
+}

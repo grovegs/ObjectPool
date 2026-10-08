@@ -92,6 +92,7 @@ using (listPool.Rent(out var items))
 ```
 
 Available collection pools:
+
 - `ListPool<T>` - Pools `List<T>` instances
 - `DictionaryPool<TKey, TValue>` - Pools `Dictionary<TKey, TValue>` instances
 - `QueuePool<T>` - Pools `Queue<T>` instances
@@ -211,16 +212,16 @@ There are two installation steps required to use it in Unity.
 
 2. Install the `GroveGames.ObjectPool.Unity` package by referencing the git URL:
 
-   ```text
-   https://github.com/grovegs/ObjectPool.git?path=src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool
-   ```
+    ```text
+    https://github.com/grovegs/ObjectPool.git?path=src/GroveGames.ObjectPool.Unity/Packages/com.grovegames.objectpool
+    ```
 
 3. Create a `csc.rsp` file in your `Assets/` directory with the following content to enable C# 10 features:
 
-   ```text
-   -langversion:10
-   -nullable:enable
-   ```
+    ```text
+    -langversion:10
+    -nullable:enable
+    ```
 
 With the Unity package, `GameObjectPool` and `ComponentPool` become available for pooling Unity objects with automatic activation/deactivation management.
 
@@ -444,10 +445,32 @@ public class EffectPlayer : MonoBehaviour
 - **`ComponentPool<T>`**: Pools Components with automatic activation/deactivation
 
 Unity pools own their instances: `Warm` creates them inactive and never beyond `maxSize`, `Return` moves an item back under the pool parent and destroys it when the pool is full, and `Clear`/`Dispose` destroy the pooled GameObjects.
+
 - **`KeyedGameObjectPool<TKey>`**: One `GameObjectPool` per key, created on first use
 - **`KeyedComponentPool<TKey, T>`**: One `ComponentPool<T>` per key, created on first use
 - **`IndexedGameObjectPool`**: One `GameObjectPool` per index, stored in an array
 - **`IndexedComponentPool<T>`**: One `ComponentPool<T>` per index, stored in an array
+
+### Dependency Injection
+
+When [GroveGames.DependencyInjection](https://github.com/grovegs/DependencyInjection) 0.6.0 or newer is installed, the optional `GroveGames.ObjectPool.Unity.DependencyInjection` assembly is compiled and adds pool registrations to `IContainerBuilder`. Each pool is registered as a singleton under its pool interface, its parent GameObject is created by the container, and the container disposes the pool and destroys its parent when it is disposed. Without the dependency injection package the assembly is skipped.
+
+```csharp
+using GroveGames.ObjectPool.Unity;
+
+builder.AddComponentPool(_bulletPrefab, initialSize: 16, maxSize: 64);
+builder.AddKeyedComponentPool<Shot, Shot>(prefab => prefab, initialSize: 0, maxSize: 32);
+builder.AddIndexedGameObjectPool(index => _effects[index], initialSize: 0, maxSize: 16);
+```
+
+| Extension                        | Registers                            |
+| -------------------------------- | ------------------------------------ |
+| `AddComponentPool<T>`            | `IObjectPool<T>`                     |
+| `AddGameObjectPool`              | `IObjectPool<GameObject>`            |
+| `AddKeyedComponentPool<TKey, T>` | `IKeyedObjectPool<TKey, T>`          |
+| `AddKeyedGameObjectPool<TKey>`   | `IKeyedObjectPool<TKey, GameObject>` |
+| `AddIndexedComponentPool<T>`     | `IKeyedObjectPool<int, T>`           |
+| `AddIndexedGameObjectPool`       | `IKeyedObjectPool<int, GameObject>`  |
 
 ## Godot
 
