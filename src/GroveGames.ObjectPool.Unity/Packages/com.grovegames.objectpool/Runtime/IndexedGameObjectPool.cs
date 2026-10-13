@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GroveGames.ObjectPool.Unity
 {
-    public sealed class IndexedGameObjectPool : IKeyedObjectPool<int, GameObject>
+    public sealed class IndexedGameObjectPool : IIndexedObjectPool<GameObject>
     {
         private readonly IndexedObjectPool<GameObject> _pool;
         private bool _disposed;

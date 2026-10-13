@@ -2,7 +2,7 @@
 
 namespace GroveGames.ObjectPool;
 
-public sealed class IndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
+public sealed class IndexedObjectPool<TValue> : IIndexedObjectPool<TValue> where TValue : class
 {
     private const int InitialCapacity = 4;
 

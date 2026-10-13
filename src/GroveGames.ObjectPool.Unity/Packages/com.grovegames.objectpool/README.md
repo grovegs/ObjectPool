@@ -194,7 +194,8 @@ The array grows to the highest index used, so keep indices dense: an enum value 
 - **`MultiTypeObjectPoolBuilder<T>`**: Fluent builder for multi-type pools
 - **`IKeyedObjectPool<TKey, TValue>`**: Interface for pools that keep one pool per key
 - **`KeyedObjectPool<TKey, TValue>`**: Creates a pool per key on first use through a factory
-- **`IndexedObjectPool<T>`**: Array-backed keyed pool with non-negative `int` keys
+- **`IIndexedObjectPool<T>`**: Interface for pools that keep one pool per non-negative `int` index
+- **`IndexedObjectPool<T>`**: Array-backed indexed pool with non-negative `int` indices
 
 ### Concurrent Components
 
@@ -469,8 +470,8 @@ builder.AddIndexedGameObjectPool(index => _effects[index], initialSize: 0, maxSi
 | `AddGameObjectPool`              | `IObjectPool<GameObject>`            |
 | `AddKeyedComponentPool<TKey, T>` | `IKeyedObjectPool<TKey, T>`          |
 | `AddKeyedGameObjectPool<TKey>`   | `IKeyedObjectPool<TKey, GameObject>` |
-| `AddIndexedComponentPool<T>`     | `IKeyedObjectPool<int, T>`           |
-| `AddIndexedGameObjectPool`       | `IKeyedObjectPool<int, GameObject>`  |
+| `AddIndexedComponentPool<T>`     | `IIndexedObjectPool<T>`              |
+| `AddIndexedGameObjectPool`       | `IIndexedObjectPool<GameObject>`     |
 
 ## Godot
 
