@@ -36,12 +36,12 @@ namespace GroveGames.ObjectPool.Unity
         public static IContainerBuilder AddIndexedComponentPool<T>(this IContainerBuilder builder, Func<int, T> prefabProvider, int initialSize, int maxSize)
             where T : Component
         {
-            return builder.AddSingleton<IKeyedObjectPool<int, T>>(resolver => new IndexedComponentPool<T>(prefabProvider, CreateRoot(resolver, typeof(T)), initialSize, maxSize));
+            return builder.AddSingleton<IIndexedObjectPool<T>>(resolver => new IndexedComponentPool<T>(prefabProvider, CreateRoot(resolver, typeof(T)), initialSize, maxSize));
         }
 
         public static IContainerBuilder AddIndexedGameObjectPool(this IContainerBuilder builder, Func<int, GameObject> prefabProvider, int initialSize, int maxSize)
         {
-            return builder.AddSingleton<IKeyedObjectPool<int, GameObject>>(resolver => new IndexedGameObjectPool(prefabProvider, CreateRoot(resolver, typeof(GameObject)), initialSize, maxSize));
+            return builder.AddSingleton<IIndexedObjectPool<GameObject>>(resolver => new IndexedGameObjectPool(prefabProvider, CreateRoot(resolver, typeof(GameObject)), initialSize, maxSize));
         }
 
         private static Transform CreateRoot(IObjectResolver resolver, Type type)

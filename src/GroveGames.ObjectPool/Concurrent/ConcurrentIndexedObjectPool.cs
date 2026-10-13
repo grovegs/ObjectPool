@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace GroveGames.ObjectPool.Concurrent;
 
-public sealed class ConcurrentIndexedObjectPool<TValue> : IKeyedObjectPool<int, TValue> where TValue : class
+public sealed class ConcurrentIndexedObjectPool<TValue> : IIndexedObjectPool<TValue> where TValue : class
 {
     private const int InitialCapacity = 4;
 
