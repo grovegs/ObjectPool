@@ -473,6 +473,12 @@ builder.AddIndexedGameObjectPool(index => _effects[index], initialSize: 0, maxSi
 | `AddIndexedComponentPool<T>`     | `IIndexedObjectPool<T>`              |
 | `AddIndexedGameObjectPool`       | `IIndexedObjectPool<GameObject>`     |
 
+The keyed and indexed pools also accept a factory that receives the container's `IObjectResolver` and returns the prefab provider. Use it when the prefabs come from a service that is only available once the container is built, such as prefabs loaded at runtime:
+
+```csharp
+builder.AddIndexedComponentPool<Target>(resolver => resolver.Resolve<ITargetLoader>().Get, initialSize: 0, maxSize: 64);
+```
+
 ## Godot
 
 Install via NuGet:
