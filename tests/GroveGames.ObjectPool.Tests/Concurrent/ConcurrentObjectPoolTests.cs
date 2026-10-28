@@ -12,11 +12,13 @@ public sealed class ConcurrentObjectPoolTests
 {
     private sealed class TestDisposable : IDisposable
     {
-        public bool IsDisposed { get; private set; }
+        private bool _isDisposed;
+
+        public bool IsDisposed => _isDisposed;
 
         public void Dispose()
         {
-            IsDisposed = true;
+            _isDisposed = true;
         }
     }
 

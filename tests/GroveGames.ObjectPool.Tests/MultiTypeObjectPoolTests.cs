@@ -10,12 +10,40 @@ public sealed class MultiTypeObjectPoolTests
 
     private sealed class TestDerived1 : TestBase
     {
-        public string Value { get; set; } = string.Empty;
+
+
+        public TestDerived1(string value)
+
+        {
+
+            _value = value;
+
+        }
+        private string _value;
+
+        public string Value => _value;
+
+        public TestDerived1()
+        {
+            _value = string.Empty;
+        }
+
+        public void SetValue(string value)
+        {
+            _value = value;
+        }
     }
 
     private sealed class TestDerived2 : TestBase
     {
-        public int Number { get; set; }
+        private int _number;
+
+        public int Number => _number;
+
+        public void SetNumber(int value)
+        {
+            _number = value;
+        }
     }
 
     [Fact]
@@ -48,7 +76,7 @@ public sealed class MultiTypeObjectPoolTests
         // Arrange
         using var pool = new MultiTypeObjectPool<TestBase>(builder =>
         {
-            builder.AddPool<TestDerived1>(() => new TestDerived1 { Value = "test" }, null, null, 0, 5);
+            builder.AddPool<TestDerived1>(() => new TestDerived1("test"), null, null, 0, 5);
         });
 
         // Act

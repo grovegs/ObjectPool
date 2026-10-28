@@ -12,22 +12,76 @@ public sealed class ConcurrentMultiTypeObjectPoolTests
 {
     private abstract class TestBase
     {
-        public string Id { get; set; } = string.Empty;
+        private string _id;
+
+        public string Id => _id;
+
+        public TestBase()
+        {
+            _id = string.Empty;
+        }
+
+        public void SetId(string value)
+        {
+            _id = value;
+        }
     }
 
     private sealed class TestDerived1 : TestBase
     {
-        public int Value { get; set; }
+
+
+        public TestDerived1()
+
+        {
+
+        }
+
+
+        public TestDerived1(int value)
+
+        {
+
+            _value = value;
+
+        }
+        private int _value;
+
+        public int Value => _value;
+
+        public void SetValue(int value)
+        {
+            _value = value;
+        }
     }
 
     private sealed class TestDerived2 : TestBase
     {
-        public string Name { get; set; } = string.Empty;
+        private string _name;
+
+        public string Name => _name;
+
+        public TestDerived2()
+        {
+            _name = string.Empty;
+        }
+
+        public void SetName(string value)
+        {
+            _name = value;
+        }
     }
 
     private sealed class TestDerived3 : TestBase
     {
-        public bool Flag { get; set; }
+        private bool _flag;
+
+        public bool Flag => _flag;
+
+        public void SetFlag(bool value)
+        {
+            _flag = value;
+        }
     }
 
     [Fact]
@@ -148,7 +202,7 @@ public sealed class ConcurrentMultiTypeObjectPoolTests
         // Arrange
         using var pool = new ConcurrentMultiTypeObjectPool<TestBase>(builder =>
         {
-            builder.AddPool<TestDerived1>(() => new TestDerived1 { Value = 42 }, null, null, 1, 5);
+            builder.AddPool<TestDerived1>(() => new TestDerived1(42), null, null, 1, 5);
         });
 
         // Act

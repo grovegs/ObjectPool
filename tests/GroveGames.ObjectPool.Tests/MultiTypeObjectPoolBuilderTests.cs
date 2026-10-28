@@ -11,12 +11,56 @@ public sealed class MultiTypeObjectPoolBuilderTests
 
     private sealed class TestDerived1 : TestBase
     {
-        public string Value { get; set; } = string.Empty;
+
+
+        public TestDerived1(string value)
+
+        {
+
+            _value = value;
+
+        }
+        private string _value;
+
+        public string Value => _value;
+
+        public TestDerived1()
+        {
+            _value = string.Empty;
+        }
+
+        public void SetValue(string value)
+        {
+            _value = value;
+        }
     }
 
     private sealed class TestDerived2 : TestBase
     {
-        public int Number { get; set; }
+
+
+        public TestDerived2()
+
+        {
+
+        }
+
+
+        public TestDerived2(int number)
+
+        {
+
+            _number = number;
+
+        }
+        private int _number;
+
+        public int Number => _number;
+
+        public void SetNumber(int value)
+        {
+            _number = value;
+        }
     }
 
     [Fact]
@@ -236,7 +280,7 @@ public sealed class MultiTypeObjectPoolBuilderTests
         var counter = 0;
 
         // Act
-        builder.AddPool<TestDerived1>(() => new TestDerived1 { Value = $"instance_{++counter}" }, null, null, 0, 5);
+        builder.AddPool<TestDerived1>(() => new TestDerived1($"instance_{++counter}"), null, null, 0, 5);
         var result = builder.Build();
 
         // Assert
@@ -255,8 +299,8 @@ public sealed class MultiTypeObjectPoolBuilderTests
         var builder = new MultiTypeObjectPoolBuilder<TestBase>();
 
         // Act
-        builder.AddPool<TestDerived1>(() => new TestDerived1 { Value = "derived1" }, null, null, 0, 5)
-               .AddPool<TestDerived2>(() => new TestDerived2 { Number = 42 }, null, null, 0, 10);
+        builder.AddPool<TestDerived1>(() => new TestDerived1("derived1"), null, null, 0, 5)
+               .AddPool<TestDerived2>(() => new TestDerived2(42), null, null, 0, 10);
         var result = builder.Build();
 
         // Assert
