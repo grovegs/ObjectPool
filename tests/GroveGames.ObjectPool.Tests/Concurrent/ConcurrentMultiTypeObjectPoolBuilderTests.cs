@@ -11,22 +11,60 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilderTests
 {
     private abstract class BuilderTestBase
     {
-        public string Id { get; set; } = string.Empty;
+        private string _id;
+
+        public string Id => _id;
+
+        public BuilderTestBase()
+        {
+            _id = string.Empty;
+        }
+
+        public void SetId(string value)
+        {
+            _id = value;
+        }
     }
 
     private sealed class BuilderTestDerived1 : BuilderTestBase
     {
-        public int Value { get; set; }
+        private int _value;
+
+        public int Value => _value;
+
+        public void SetValue(int value)
+        {
+            _value = value;
+        }
     }
 
     private sealed class BuilderTestDerived2 : BuilderTestBase
     {
-        public string Name { get; set; } = string.Empty;
+        private string _name;
+
+        public string Name => _name;
+
+        public BuilderTestDerived2()
+        {
+            _name = string.Empty;
+        }
+
+        public void SetName(string value)
+        {
+            _name = value;
+        }
     }
 
     private sealed class BuilderTestDerived3 : BuilderTestBase
     {
-        public bool Flag { get; set; }
+        private bool _flag;
+
+        public bool Flag => _flag;
+
+        public void SetFlag(bool value)
+        {
+            _flag = value;
+        }
     }
 
     [Fact]
@@ -62,8 +100,8 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilderTests
         // Act
         var result = builder.AddPool<BuilderTestDerived1>(
             () => new BuilderTestDerived1(),
-            item => item.Value = 42,
-            item => item.Value = 0,
+            item => item.SetValue(42),
+            item => item.SetValue(0),
             1, 5);
 
         // Assert
@@ -273,7 +311,7 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilderTests
         // Act
         builder.AddPool<BuilderTestDerived1>(
             () => new BuilderTestDerived1(),
-            item => item.Value = 99,
+            item => item.SetValue(99),
             null,
             1, 5);
         var result = builder.Build();
@@ -292,7 +330,7 @@ public sealed class ConcurrentMultiTypeObjectPoolBuilderTests
         builder.AddPool<BuilderTestDerived1>(
             () => new BuilderTestDerived1(),
             null,
-            item => item.Value = 0,
+            item => item.SetValue(0),
             1, 5);
         var result = builder.Build();
 

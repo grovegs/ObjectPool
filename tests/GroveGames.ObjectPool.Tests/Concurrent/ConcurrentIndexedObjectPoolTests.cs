@@ -10,14 +10,44 @@ public sealed class ConcurrentIndexedObjectPoolTests
 {
     private sealed class TestObject
     {
-        public int Key { get; set; }
-        public bool IsRented { get; set; }
-        public bool IsReturned { get; set; }
+        private int _key;
+        private bool _isRented;
+        private bool _isReturned;
+
+        public int Key => _key;
+        public bool IsRented => _isRented;
+        public bool IsReturned => _isReturned;
+
+        public TestObject()
+        {
+        }
+
+        public TestObject(int key)
+        {
+            _key = key;
+        }
+
+        public void SetReturned(bool value)
+        {
+            _isReturned = value;
+        }
+
+        public void SetRented(bool value)
+        {
+            _isRented = value;
+        }
+
+        public void SetKey(int value)
+        {
+            _key = value;
+        }
     }
 
     private sealed class TestPool : IConcurrentObjectPool<TestObject>
     {
-        public bool IsDisposed { get; private set; }
+        private bool _isDisposed;
+
+        public bool IsDisposed => _isDisposed;
 
         public int Count => 0;
 
@@ -42,7 +72,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
 
         public void Dispose()
         {
-            IsDisposed = true;
+            _isDisposed = true;
         }
     }
 
@@ -55,7 +85,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Count_UnusedKey_ReturnsZero()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 5, 10));
 
         Assert.Equal(0, pool.Count(0));
     }
@@ -63,7 +93,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void MaxSize_UnusedKey_ReturnsZero()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 5, 10));
 
         Assert.Equal(0, pool.MaxSize(0));
     }
@@ -71,7 +101,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void MaxSize_UsedKey_ReturnsPoolMaxSize()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 15));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 15));
 
         pool.Rent(0);
 
@@ -81,7 +111,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_NewKey_ReturnsItemFromKeyPool()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
         var item = pool.Rent(1);
 
@@ -95,7 +125,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
         using var pool = new ConcurrentIndexedObjectPool<TestObject>(key =>
         {
             factoryCalls++;
-            return new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5);
+            return new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5);
         });
 
         pool.Rent(0);
@@ -107,7 +137,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_DifferentKeys_UsesSeparatePools()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
         var first = pool.Rent(0);
         var second = pool.Rent(1);
@@ -130,7 +160,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_WithOnRentCallback_InvokesCallback()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, static item => item.IsRented = true, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), static item => item.SetRented(true), null, 0, 5));
 
         var item = pool.Rent(0);
 
@@ -140,7 +170,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Return_ItemToPool_AddsToPool()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
         var item = pool.Rent(0);
 
         pool.Return(0, item);
@@ -151,7 +181,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Return_WithOnReturnCallback_InvokesCallback()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, static item => item.IsReturned = true, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, static item => item.SetReturned(true), 0, 5));
         var item = pool.Rent(0);
 
         pool.Return(0, item);
@@ -162,9 +192,9 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Return_UnusedKey_CreatesPoolAndStoresItem()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
-        pool.Return(2, new TestObject { Key = 2 });
+        pool.Return(2, new TestObject(2));
 
         Assert.Equal(1, pool.Count(2));
     }
@@ -172,7 +202,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Warm_Key_PreAllocatesItems()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 5, 10));
 
         pool.Warm(0);
 
@@ -183,7 +213,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Warm_NoParameters_WarmsCreatedPools()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 5, 10));
         pool.Rent(0);
         pool.Rent(1);
 
@@ -197,7 +227,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Clear_Key_ClearsOnlyThatPool()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 5, 10));
         pool.Warm(0);
         pool.Warm(1);
 
@@ -214,7 +244,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
         using var pool = new ConcurrentIndexedObjectPool<TestObject>(key =>
         {
             factoryCalls++;
-            return new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5);
+            return new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5);
         });
 
         pool.Clear(0);
@@ -225,7 +255,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Clear_NoParameters_ClearsAllPools()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 5, 10));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 5, 10));
         pool.Warm(0);
         pool.Warm(1);
 
@@ -253,7 +283,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
-        var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
         pool.Dispose();
         pool.Dispose();
@@ -262,7 +292,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_AfterDispose_ThrowsObjectDisposedException()
     {
-        var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
         pool.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => pool.Rent(0));
@@ -271,7 +301,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_NegativeIndex_ThrowsArgumentOutOfRangeException()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => pool.Rent(-1));
     }
@@ -279,7 +309,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Count_NegativeIndex_ThrowsArgumentOutOfRangeException()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => pool.Count(-1));
     }
@@ -287,7 +317,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_IndexBeyondCapacity_KeepsEarlierPools()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
         var first = pool.Rent(1);
         pool.Return(1, first);
 
@@ -301,7 +331,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public void Rent_LargeIndex_CreatesPool()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 5));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 5));
 
         var item = pool.Rent(1000);
 
@@ -343,7 +373,7 @@ public sealed class ConcurrentIndexedObjectPoolTests
     [Fact]
     public async Task RentAndReturn_ManyThreads_KeepsItemsInTheirPools()
     {
-        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject { Key = key }, null, null, 0, 100));
+        using var pool = new ConcurrentIndexedObjectPool<TestObject>(key => new ConcurrentObjectPool<TestObject>(() => new TestObject(key), null, null, 0, 100));
         var tasks = new List<Task>();
 
         for (var i = 0; i < 16; i++)
