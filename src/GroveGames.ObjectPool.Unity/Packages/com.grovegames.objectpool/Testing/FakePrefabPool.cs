@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using GroveGames.ObjectPool;
 using UnityEngine;
 
-namespace GroveGames.ObjectPool.Unity.Testing
+namespace GroveGames.ObjectPool.Testing
 {
     public sealed class FakePrefabPool<T> : IObjectPool<T> where T : Component
     {
