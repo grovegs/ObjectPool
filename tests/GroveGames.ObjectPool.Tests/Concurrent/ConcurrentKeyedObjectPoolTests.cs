@@ -44,7 +44,7 @@ public sealed class ConcurrentKeyedObjectPoolTests
         }
     }
 
-    private sealed class TestPool : IConcurrentObjectPool<TestObject>
+    private sealed class FakePool : IConcurrentObjectPool<TestObject>
     {
         private bool _isDisposed;
 
@@ -269,9 +269,9 @@ public sealed class ConcurrentKeyedObjectPoolTests
     [Fact]
     public void Dispose_CreatedPools_DisposesEachPool()
     {
-        var created = new TestPool[2];
+        var created = new FakePool[2];
         var index = 0;
-        var pool = new ConcurrentKeyedObjectPool<string, TestObject>(_ => created[index++] = new TestPool());
+        var pool = new ConcurrentKeyedObjectPool<string, TestObject>(_ => created[index++] = new FakePool());
         pool.Rent("a");
         pool.Rent("b");
 
@@ -302,10 +302,10 @@ public sealed class ConcurrentKeyedObjectPoolTests
     [Fact]
     public async Task Rent_SameKeyFromManyThreads_KeepsOnePoolAndDisposesExtras()
     {
-        var created = new System.Collections.Concurrent.ConcurrentBag<TestPool>();
+        var created = new System.Collections.Concurrent.ConcurrentBag<FakePool>();
         using var pool = new ConcurrentKeyedObjectPool<string, TestObject>(_ =>
         {
-            var testPool = new TestPool();
+            var testPool = new FakePool();
             created.Add(testPool);
             return testPool;
         });
