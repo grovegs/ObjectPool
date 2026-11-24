@@ -40,7 +40,7 @@ public sealed class KeyedObjectPoolTests
         }
     }
 
-    private sealed class TestPool : IObjectPool<TestObject>
+    private sealed class FakePool : IObjectPool<TestObject>
     {
         private bool _isDisposed;
 
@@ -265,9 +265,9 @@ public sealed class KeyedObjectPoolTests
     [Fact]
     public void Dispose_CreatedPools_DisposesEachPool()
     {
-        var created = new TestPool[2];
+        var created = new FakePool[2];
         var index = 0;
-        var pool = new KeyedObjectPool<string, TestObject>(_ => created[index++] = new TestPool());
+        var pool = new KeyedObjectPool<string, TestObject>(_ => created[index++] = new FakePool());
         pool.Rent("a");
         pool.Rent("b");
 
