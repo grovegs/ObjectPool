@@ -19,6 +19,7 @@ A high-performance object pooling library for .NET, Unity, and Godot with Native
 - **Native AOT Compatible**: Fully supports ahead-of-time compilation for maximum performance
 - **Unity Integration**: GameObjectPool and ComponentPool with automatic activation management
 - **Godot Integration**: Available as a Godot addon
+- Test doubles for your own tests: `FakeObjectPool` and `FakePrefabPool` in the editor-only `GroveGames.ObjectPool.Unity.Testing` assembly
 
 ## .NET
 
