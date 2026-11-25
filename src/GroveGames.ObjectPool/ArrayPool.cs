@@ -68,13 +68,18 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         var size = array.Length;
 
+        if (size == 0)
+        {
+            return;
+        }
+
         if (!_poolsBySize.TryGetValue(size, out var pool))
         {
             pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
             _poolsBySize[size] = pool;
         }
 
-        if (_clearOnReturn)
+        if (_clearOnReturn && pool.Count < pool.MaxSize)
         {
             Array.Clear(array, 0, array.Length);
         }

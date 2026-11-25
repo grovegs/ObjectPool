@@ -665,4 +665,36 @@ public sealed class ConcurrentObjectPoolTests
             IsDisposed = true;
         }
     }
+
+    [Fact]
+    public void Warm_FactoryThrows_KeepsCountEqualToPooledItems()
+    {
+        // Arrange
+        var calls = 0;
+        using var pool = new ConcurrentObjectPool<object>(() => ++calls == 2 ? throw new InvalidOperationException() : new object(), null, null, 3, 3);
+
+        // Act
+        Assert.Throws<InvalidOperationException>(pool.Warm);
+
+        // Assert
+        Assert.Equal(1, pool.Count);
+        pool.Rent();
+        Assert.Equal(0, pool.Count);
+    }
+
+    [Fact]
+    public void Clear_PooledDisposables_DisposesThem()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<TestOverflowDisposable>(() => new TestOverflowDisposable(), null, null, 0, 5);
+        var item = new TestOverflowDisposable();
+        pool.Return(item);
+
+        // Act
+        pool.Clear();
+
+        // Assert
+        Assert.True(item.IsDisposed);
+        Assert.Equal(0, pool.Count);
+    }
 }

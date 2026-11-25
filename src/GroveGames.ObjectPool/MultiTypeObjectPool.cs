@@ -47,11 +47,13 @@ public sealed class MultiTypeObjectPool<TBase> : IMultiTypeObjectPool<TBase> whe
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         ArgumentNullException.ThrowIfNull(item);
-        var type = item.GetType();
-
-        if (_poolsByType.TryGetValue(type, out var pool))
+        for (var type = item.GetType(); type != null; type = type.BaseType)
         {
-            pool.Return(item);
+            if (_poolsByType.TryGetValue(type, out var pool))
+            {
+                pool.Return(item);
+                return;
+            }
         }
     }
 

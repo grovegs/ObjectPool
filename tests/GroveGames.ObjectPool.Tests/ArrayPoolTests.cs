@@ -386,4 +386,17 @@ public sealed class ArrayPoolTests
         // Assert
         Assert.Equal("a", array[0]);
     }
+
+    [Fact]
+    public void Return_EmptyArray_IsNotPooled()
+    {
+        // Arrange
+        using var pool = new ArrayPool<int>(0, 5);
+
+        // Act
+        pool.Return(pool.Rent(0));
+
+        // Assert
+        Assert.Equal(0, pool.Count(0));
+    }
 }

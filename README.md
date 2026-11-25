@@ -52,7 +52,8 @@ pool.Dispose();
 - **Rent** hands out the most recently returned object first, which is the one most likely to still be in the CPU cache.
 - **Return** throws `ArgumentNullException` for `null`. When the pool already holds `maxSize` objects, the returned object is dropped, and disposed if it is `IDisposable`.
 - **Warm** creates up to `initialSize` objects, stopping at `maxSize`, so calling it again never grows the pool past its limit.
-- **Return each object once.** The core pools do not check for an object returned twice, which would hand the same instance to two callers. The Unity pools log an error and ignore it in the Editor and development builds.
+- **Clear** and **Dispose** dispose the pooled objects that are `IDisposable`.
+- **Return each object once.** The core pools do not check for an object returned twice, which would hand the same instance to two callers, or, when the pool is full, dispose an object the pool still holds. The Unity pools log an error and ignore it in the Editor and development builds.
 
 ### Using the Rental Pattern
 
@@ -105,7 +106,7 @@ Available collection pools:
 - `StackPool<T>` - Pools `Stack<T>` instances
 - `HashSetPool<T>` - Pools `HashSet<T>` instances
 - `LinkedListPool<T>` - Pools `LinkedList<T>` instances
-- `ArrayPool<T>` - Pools array instances, one pool per length. Pass `clearOnReturn: true` to clear each array when it is returned, so an array of references does not keep its old objects alive
+- `ArrayPool<T>` - Pools array instances, one pool per length. Pass `clearOnReturn: true` to clear each array the pool keeps when it is returned, so an array of references does not keep its old objects alive
 
 ### Thread-Safe Pools
 
@@ -150,7 +151,7 @@ multiPool.Return(zombie);
 multiPool.Return(skeleton);
 ```
 
-`Rent<T>()` returns a `T`. `Return` finds the pool by the object's own type, so an object held as an `Enemy` still goes back to its `Skeleton` pool; an object of a type with no pool is ignored.
+`Rent<T>()` returns a `T`. `Return` finds the pool by the object's own type or its nearest registered base type, so an object held as an `Enemy` still goes back to its `Skeleton` pool, and a factory may create a subclass of the registered type; an object of a type with no pool is ignored.
 
 ### Keyed Object Pool
 

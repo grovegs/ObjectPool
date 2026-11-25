@@ -416,4 +416,20 @@ public sealed class ObjectPoolTests
         // Assert
         Assert.Same(second, rented);
     }
+
+    [Fact]
+    public void Clear_PooledDisposables_DisposesThem()
+    {
+        // Arrange
+        using var pool = new ObjectPool<TestDisposable>(() => new TestDisposable(), null, null, 0, 5);
+        var item = new TestDisposable();
+        pool.Return(item);
+
+        // Act
+        pool.Clear();
+
+        // Assert
+        Assert.True(item.IsDisposed);
+        Assert.Equal(0, pool.Count);
+    }
 }

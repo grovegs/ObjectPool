@@ -79,7 +79,13 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        _items.Clear();
+        while (_items.TryPop(out var item))
+        {
+            if (item is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
     }
 
     public void Warm()

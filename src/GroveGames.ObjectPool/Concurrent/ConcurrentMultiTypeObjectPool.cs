@@ -48,11 +48,13 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         ArgumentNullException.ThrowIfNull(item);
-        var type = item.GetType();
-
-        if (_poolsByType.TryGetValue(type, out var pool))
+        for (var type = item.GetType(); type != null; type = type.BaseType)
         {
-            pool.Return(item);
+            if (_poolsByType.TryGetValue(type, out var pool))
+            {
+                pool.Return(item);
+                return;
+            }
         }
     }
 
