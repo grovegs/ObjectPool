@@ -467,4 +467,29 @@ public sealed class MultiTypeObjectPoolTests
     private sealed class TestRegisteredSubclass : TestRegistered
     {
     }
+
+    [Fact]
+    public void Return_PoolRegisteredUnderInterface_ReturnsToIt()
+    {
+        // Arrange
+        using var pool = new MultiTypeObjectPool<ITestThing>(builder =>
+        {
+            builder.AddPool<ITestThing>(() => new TestThing(), null, null, 0, 5);
+        });
+        var item = pool.Rent<ITestThing>();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Equal(1, pool.Count<ITestThing>());
+    }
+
+    private interface ITestThing
+    {
+    }
+
+    private sealed class TestThing : ITestThing
+    {
+    }
 }

@@ -432,4 +432,37 @@ public sealed class ObjectPoolTests
         Assert.True(item.IsDisposed);
         Assert.Equal(0, pool.Count);
     }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Clear_DisposeReturnsItemToPool_Finishes()
+    {
+        // Arrange
+        using var pool = new ObjectPool<TestSelfReturning>(() => new TestSelfReturning(), null, null, 0, 5);
+        var item = new TestSelfReturning();
+        item.Pool = pool;
+        pool.Return(item);
+
+        // Act
+        var clearing = System.Threading.Tasks.Task.Run(pool.Clear, TestContext.Current.CancellationToken);
+        var finished = await System.Threading.Tasks.Task.WhenAny(clearing, System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)) == clearing;
+
+        // Assert
+        Assert.True(finished);
+    }
+
+    private sealed class TestSelfReturning : IDisposable
+    {
+        public ObjectPool<TestSelfReturning>? Pool { get; set; }
+
+        public void Dispose()
+        {
+            try
+            {
+                Pool?.Return(this);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+    }
 }

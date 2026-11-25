@@ -87,7 +87,7 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        while (_items.TryDequeue(out var item))
+        for (var remaining = _items.Count; remaining > 0 && _items.TryDequeue(out var item); remaining--)
         {
             Interlocked.Decrement(ref _count);
             DisposeItem(item);
@@ -98,7 +98,7 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        for (var i = 0; i < _initialSize; i++)
+        for (var i = 0; i < _initialSize && _count < _maxSize; i++)
         {
             var item = _factory();
 

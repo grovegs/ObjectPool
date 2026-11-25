@@ -79,9 +79,12 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        while (_items.TryPop(out var item))
+        var items = _items.ToArray();
+        _items.Clear();
+
+        for (var i = 0; i < items.Length; i++)
         {
-            if (item is IDisposable disposable)
+            if (items[i] is IDisposable disposable)
             {
                 disposable.Dispose();
             }

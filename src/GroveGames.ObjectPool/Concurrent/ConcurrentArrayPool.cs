@@ -67,7 +67,7 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
             return;
         }
 
-        if (_clearOnReturn && pool.Count < pool.MaxSize)
+        if (_clearOnReturn)
         {
             Array.Clear(array, 0, array.Length);
         }

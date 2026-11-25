@@ -56,6 +56,11 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
                 return;
             }
         }
+
+        if (_poolsByType.TryGetValue(typeof(TDerived), out var declaredPool))
+        {
+            declaredPool.Return(item);
+        }
     }
 
     public void Warm<TDerived>() where TDerived : class, TBase

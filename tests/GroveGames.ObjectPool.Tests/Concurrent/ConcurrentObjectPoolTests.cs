@@ -697,4 +697,56 @@ public sealed class ConcurrentObjectPoolTests
         Assert.True(item.IsDisposed);
         Assert.Equal(0, pool.Count);
     }
+
+    [Fact]
+    public void Warm_PoolAlreadyFull_DoesNotCallFactory()
+    {
+        // Arrange
+        var calls = 0;
+        using var pool = new ConcurrentObjectPool<object>(() =>
+        {
+            calls++;
+            return new object();
+        }, null, null, 3, 3);
+        pool.Warm();
+
+        // Act
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(3, calls);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Clear_DisposeReturnsItemToPool_Finishes()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<TestSelfReturning>(() => new TestSelfReturning(), null, null, 0, 5);
+        var item = new TestSelfReturning();
+        item.Pool = pool;
+        pool.Return(item);
+
+        // Act
+        var clearing = Task.Run(pool.Clear, TestContext.Current.CancellationToken);
+        var finished = await Task.WhenAny(clearing, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)) == clearing;
+
+        // Assert
+        Assert.True(finished);
+    }
+
+    private sealed class TestSelfReturning : IDisposable
+    {
+        public ConcurrentObjectPool<TestSelfReturning>? Pool { get; set; }
+
+        public void Dispose()
+        {
+            try
+            {
+                Pool?.Return(this);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+    }
 }
