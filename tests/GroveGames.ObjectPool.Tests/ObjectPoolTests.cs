@@ -359,4 +359,110 @@ public sealed class ObjectPoolTests
         Assert.Equal("item3", item3);
         Assert.Equal(0, pool.Count);
     }
+
+    [Fact]
+    public void Return_Null_ThrowsArgumentNullException()
+    {
+        // Arrange
+        using var pool = new ObjectPool<object>(() => new object(), null, null, 0, 5);
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => pool.Return(null!));
+    }
+
+    [Fact]
+    public void Return_PoolFull_DisposesItem()
+    {
+        // Arrange
+        using var pool = new ObjectPool<TestDisposable>(() => new TestDisposable(), null, null, 0, 1);
+        pool.Return(new TestDisposable());
+        var overflow = new TestDisposable();
+
+        // Act
+        pool.Return(overflow);
+
+        // Assert
+        Assert.True(overflow.IsDisposed);
+        Assert.Equal(1, pool.Count);
+    }
+
+    [Fact]
+    public void Warm_CalledTwice_StaysWithinMaxSize()
+    {
+        // Arrange
+        using var pool = new ObjectPool<object>(() => new object(), null, null, 3, 4);
+
+        // Act
+        pool.Warm();
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(4, pool.Count);
+    }
+
+    [Fact]
+    public void Rent_AfterReturns_ReturnsMostRecentlyReturnedItem()
+    {
+        // Arrange
+        using var pool = new ObjectPool<object>(() => new object(), null, null, 0, 5);
+        var first = new object();
+        var second = new object();
+        pool.Return(first);
+        pool.Return(second);
+
+        // Act
+        var rented = pool.Rent();
+
+        // Assert
+        Assert.Same(second, rented);
+    }
+
+    [Fact]
+    public void Clear_PooledDisposables_DisposesThem()
+    {
+        // Arrange
+        using var pool = new ObjectPool<TestDisposable>(() => new TestDisposable(), null, null, 0, 5);
+        var item = new TestDisposable();
+        pool.Return(item);
+
+        // Act
+        pool.Clear();
+
+        // Assert
+        Assert.True(item.IsDisposed);
+        Assert.Equal(0, pool.Count);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Clear_DisposeReturnsItemToPool_Finishes()
+    {
+        // Arrange
+        using var pool = new ObjectPool<TestSelfReturning>(() => new TestSelfReturning(), null, null, 0, 5);
+        var item = new TestSelfReturning();
+        item.Pool = pool;
+        pool.Return(item);
+
+        // Act
+        var clearing = System.Threading.Tasks.Task.Run(pool.Clear, TestContext.Current.CancellationToken);
+        var finished = await System.Threading.Tasks.Task.WhenAny(clearing, System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)) == clearing;
+
+        // Assert
+        Assert.True(finished);
+    }
+
+    private sealed class TestSelfReturning : IDisposable
+    {
+        public ObjectPool<TestSelfReturning>? Pool { get; set; }
+
+        public void Dispose()
+        {
+            try
+            {
+                Pool?.Return(this);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+    }
 }

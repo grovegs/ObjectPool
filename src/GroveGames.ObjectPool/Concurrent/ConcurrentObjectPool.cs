@@ -69,36 +69,47 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
     public void Return(T item)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentNullException.ThrowIfNull(item);
 
         _onReturn?.Invoke(item);
 
         if (Interlocked.Increment(ref _count) <= _maxSize)
         {
             _items.Enqueue(item);
+            return;
         }
-        else
-        {
-            Interlocked.Decrement(ref _count);
-        }
+
+        Interlocked.Decrement(ref _count);
+        DisposeItem(item);
     }
 
     public void Clear()
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        _items.Clear();
-        Interlocked.Exchange(ref _count, 0);
+        for (var remaining = _items.Count; remaining > 0 && _items.TryDequeue(out var item); remaining--)
+        {
+            Interlocked.Decrement(ref _count);
+            DisposeItem(item);
+        }
     }
 
     public void Warm()
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        for (int i = 0; i < _initialSize; i++)
+        for (var i = 0; i < _initialSize && _count < _maxSize; i++)
         {
             var item = _factory();
+
+            if (Interlocked.Increment(ref _count) > _maxSize)
+            {
+                Interlocked.Decrement(ref _count);
+                DisposeItem(item);
+                return;
+            }
+
             _items.Enqueue(item);
-            Interlocked.Increment(ref _count);
         }
     }
 
@@ -118,5 +129,13 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
         }
 
         _items.Clear();
+    }
+
+    private static void DisposeItem(T item)
+    {
+        if (item is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
 }

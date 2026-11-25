@@ -8,9 +8,15 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
     private readonly Dictionary<int, ObjectPool<T[]>> _poolsBySize;
     private readonly int _initialSize;
     private readonly int _maxSize;
+    private readonly bool _clearOnReturn;
     private bool _disposed;
 
     public ArrayPool(int initialSize, int maxSize)
+        : this(initialSize, maxSize, false)
+    {
+    }
+
+    public ArrayPool(int initialSize, int maxSize, bool clearOnReturn)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(initialSize);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
@@ -19,6 +25,7 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
         _poolsBySize = [];
         _initialSize = initialSize;
         _maxSize = maxSize;
+        _clearOnReturn = clearOnReturn;
         _disposed = false;
     }
 
@@ -61,10 +68,20 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         var size = array.Length;
 
+        if (size == 0)
+        {
+            return;
+        }
+
         if (!_poolsBySize.TryGetValue(size, out var pool))
         {
             pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
             _poolsBySize[size] = pool;
+        }
+
+        if (_clearOnReturn && pool.Count < pool.MaxSize)
+        {
+            Array.Clear(array, 0, array.Length);
         }
 
         pool.Return(array);

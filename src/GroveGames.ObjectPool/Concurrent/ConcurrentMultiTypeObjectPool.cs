@@ -35,23 +35,31 @@ public sealed class ConcurrentMultiTypeObjectPool<TBase> : IMultiTypeObjectPool<
         return _poolsByType.TryGetValue(type, out var pool) ? pool.MaxSize : 0;
     }
 
-    public TBase Rent<TDerived>() where TDerived : class, TBase
+    public TDerived Rent<TDerived>() where TDerived : class, TBase
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         var type = typeof(TDerived);
-        return _poolsByType.TryGetValue(type, out var pool) ? pool.Rent() : throw new InvalidOperationException($"Type {typeof(TDerived).Name} is not registered.");
+        return _poolsByType.TryGetValue(type, out var pool) ? (TDerived)pool.Rent() : throw new InvalidOperationException($"Type {typeof(TDerived).Name} is not registered.");
     }
 
     public void Return<TDerived>(TDerived item) where TDerived : class, TBase
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        var type = typeof(TDerived);
-
-        if (_poolsByType.TryGetValue(type, out var pool))
+        ArgumentNullException.ThrowIfNull(item);
+        for (var type = item.GetType(); type != null; type = type.BaseType)
         {
-            pool.Return(item);
+            if (_poolsByType.TryGetValue(type, out var pool))
+            {
+                pool.Return(item);
+                return;
+            }
+        }
+
+        if (_poolsByType.TryGetValue(typeof(TDerived), out var declaredPool))
+        {
+            declaredPool.Return(item);
         }
     }
 

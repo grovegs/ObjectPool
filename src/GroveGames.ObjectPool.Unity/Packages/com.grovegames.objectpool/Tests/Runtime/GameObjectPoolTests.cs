@@ -1,6 +1,7 @@
 using System;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace GroveGames.ObjectPool.Unity.Tests
 {
@@ -122,6 +123,19 @@ namespace GroveGames.ObjectPool.Unity.Tests
 
             UnityEngine.Object.DestroyImmediate(instance);
             UnityEngine.Object.DestroyImmediate(parent.gameObject);
+        }
+
+        [Test]
+        public void Return_SameItemTwice_LogsErrorAndPoolsItOnce()
+        {
+            using var pool = new GameObjectPool(_prefab, null, 0, 10);
+            var item = pool.Rent();
+            pool.Return(item);
+
+            LogAssert.Expect(LogType.Error, $"{item.name} was returned to the pool twice");
+            pool.Return(item);
+
+            Assert.That(pool.Count, Is.EqualTo(1));
         }
 
         [Test]

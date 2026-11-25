@@ -424,4 +424,72 @@ public sealed class MultiTypeObjectPoolTests
         Assert.Equal(0, pool.Count<TestDerived1>());
         Assert.Equal(0, pool.Count<TestDerived2>());
     }
+
+    [Fact]
+    public void Return_BaseTypedVariable_ReturnsToItsTypePool()
+    {
+        // Arrange
+        using var pool = new MultiTypeObjectPool<TestBase>(builder =>
+        {
+            builder.AddPool<TestDerived1>(() => new TestDerived1(), null, null, 0, 5);
+        });
+        TestBase item = pool.Rent<TestDerived1>();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Equal(1, pool.Count<TestDerived1>());
+        Assert.Same(item, pool.Rent<TestDerived1>());
+    }
+
+    [Fact]
+    public void Return_SubclassOfRegisteredType_ReturnsToRegisteredPool()
+    {
+        // Arrange
+        using var pool = new MultiTypeObjectPool<TestBase>(builder =>
+        {
+            builder.AddPool<TestRegistered>(() => new TestRegisteredSubclass(), null, null, 0, 5);
+        });
+        var item = pool.Rent<TestRegistered>();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Equal(1, pool.Count<TestRegistered>());
+    }
+
+    private class TestRegistered : TestBase
+    {
+    }
+
+    private sealed class TestRegisteredSubclass : TestRegistered
+    {
+    }
+
+    [Fact]
+    public void Return_PoolRegisteredUnderInterface_ReturnsToIt()
+    {
+        // Arrange
+        using var pool = new MultiTypeObjectPool<ITestThing>(builder =>
+        {
+            builder.AddPool<ITestThing>(() => new TestThing(), null, null, 0, 5);
+        });
+        var item = pool.Rent<ITestThing>();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Equal(1, pool.Count<ITestThing>());
+    }
+
+    private interface ITestThing
+    {
+    }
+
+    private sealed class TestThing : ITestThing
+    {
+    }
 }

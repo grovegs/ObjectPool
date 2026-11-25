@@ -664,4 +664,35 @@ public sealed class ConcurrentArrayPoolTests
         // Assert
         Assert.Throws<ObjectDisposedException>(() => pool.Count(10));
     }
+
+    [Fact]
+    public void Return_ClearOnReturn_ClearsArray()
+    {
+        // Arrange
+        using var pool = new ConcurrentArrayPool<string>(0, 5, true);
+        var array = pool.Rent(2);
+        array[0] = "a";
+        array[1] = "b";
+
+        // Act
+        pool.Return(array);
+
+        // Assert
+        Assert.Equal(new string?[] { null, null }, array);
+    }
+
+    [Fact]
+    public void Return_Default_KeepsArrayContents()
+    {
+        // Arrange
+        using var pool = new ConcurrentArrayPool<string>(0, 5);
+        var array = pool.Rent(1);
+        array[0] = "a";
+
+        // Act
+        pool.Return(array);
+
+        // Assert
+        Assert.Equal("a", array[0]);
+    }
 }
