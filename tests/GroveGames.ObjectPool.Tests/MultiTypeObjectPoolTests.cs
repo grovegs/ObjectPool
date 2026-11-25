@@ -424,4 +424,22 @@ public sealed class MultiTypeObjectPoolTests
         Assert.Equal(0, pool.Count<TestDerived1>());
         Assert.Equal(0, pool.Count<TestDerived2>());
     }
+
+    [Fact]
+    public void Return_BaseTypedVariable_ReturnsToItsTypePool()
+    {
+        // Arrange
+        using var pool = new MultiTypeObjectPool<TestBase>(builder =>
+        {
+            builder.AddPool<TestDerived1>(() => new TestDerived1(), null, null, 0, 5);
+        });
+        TestBase item = pool.Rent<TestDerived1>();
+
+        // Act
+        pool.Return(item);
+
+        // Assert
+        Assert.Equal(1, pool.Count<TestDerived1>());
+        Assert.Same(item, pool.Rent<TestDerived1>());
+    }
 }

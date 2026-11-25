@@ -5,7 +5,7 @@ namespace GroveGames.ObjectPool;
 
 public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 {
-    private readonly Queue<T> _items;
+    private readonly Stack<T> _items;
     private readonly Func<T> _factory;
     private readonly Action<T>? _onRent;
     private readonly Action<T>? _onReturn;
@@ -38,7 +38,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
         ArgumentOutOfRangeException.ThrowIfGreaterThan(initialSize, maxSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
 
-        _items = new Queue<T>(initialSize);
+        _items = new Stack<T>(initialSize);
         _factory = factory;
         _onRent = onRent;
         _onReturn = onReturn;
@@ -51,7 +51,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var item = _items.TryDequeue(out var pooledItem) ? pooledItem : _factory();
+        var item = _items.TryPop(out var pooledItem) ? pooledItem : _factory();
         _onRent?.Invoke(item);
         return item;
     }
@@ -59,12 +59,19 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     public void Return(T item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(item);
 
         _onReturn?.Invoke(item);
 
         if (_items.Count < _maxSize)
         {
-            _items.Enqueue(item);
+            _items.Push(item);
+            return;
+        }
+
+        if (item is IDisposable disposable)
+        {
+            disposable.Dispose();
         }
     }
 
@@ -79,9 +86,9 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        for (int i = 0; i < _initialSize; i++)
+        for (var i = 0; i < _initialSize && _items.Count < _maxSize; i++)
         {
-            _items.Enqueue(_factory());
+            _items.Push(_factory());
         }
     }
 
@@ -94,7 +101,7 @@ public sealed class ObjectPool<T> : IObjectPool<T> where T : class
 
         _disposed = true;
 
-        while (_items.TryDequeue(out var item))
+        while (_items.TryPop(out var item))
         {
             if (item is IDisposable disposable)
             {

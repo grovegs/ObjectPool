@@ -69,16 +69,21 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
     public void Return(T item)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ArgumentNullException.ThrowIfNull(item);
 
         _onReturn?.Invoke(item);
 
         if (Interlocked.Increment(ref _count) <= _maxSize)
         {
             _items.Enqueue(item);
+            return;
         }
-        else
+
+        Interlocked.Decrement(ref _count);
+
+        if (item is IDisposable disposable)
         {
-            Interlocked.Decrement(ref _count);
+            disposable.Dispose();
         }
     }
 
@@ -94,11 +99,17 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        for (int i = 0; i < _initialSize; i++)
+        for (var i = 0; i < _initialSize; i++)
         {
-            var item = _factory();
-            _items.Enqueue(item);
-            Interlocked.Increment(ref _count);
+            var count = Interlocked.Increment(ref _count);
+
+            if (count > _maxSize)
+            {
+                Interlocked.Decrement(ref _count);
+                return;
+            }
+
+            _items.Enqueue(_factory());
         }
     }
 

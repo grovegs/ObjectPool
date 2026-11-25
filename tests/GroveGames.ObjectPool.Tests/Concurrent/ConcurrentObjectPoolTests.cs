@@ -615,4 +615,54 @@ public sealed class ConcurrentObjectPoolTests
         // Assert
         Assert.Equal(5, pool.Count);
     }
+
+    [Fact]
+    public void Return_Null_ThrowsArgumentNullException()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<object>(() => new object(), null, null, 0, 5);
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => pool.Return(null!));
+    }
+
+    [Fact]
+    public void Return_PoolFull_DisposesItem()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<TestOverflowDisposable>(() => new TestOverflowDisposable(), null, null, 0, 1);
+        pool.Return(new TestOverflowDisposable());
+        var overflow = new TestOverflowDisposable();
+
+        // Act
+        pool.Return(overflow);
+
+        // Assert
+        Assert.True(overflow.IsDisposed);
+        Assert.Equal(1, pool.Count);
+    }
+
+    [Fact]
+    public void Warm_CalledTwice_StaysWithinMaxSize()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<object>(() => new object(), null, null, 3, 4);
+
+        // Act
+        pool.Warm();
+        pool.Warm();
+
+        // Assert
+        Assert.Equal(4, pool.Count);
+    }
+
+    private sealed class TestOverflowDisposable : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose()
+        {
+            IsDisposed = true;
+        }
+    }
 }

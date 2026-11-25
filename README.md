@@ -49,6 +49,11 @@ pool.Return(obj);
 pool.Dispose();
 ```
 
+- **Rent** hands out the most recently returned object first, which is the one most likely to still be in the CPU cache.
+- **Return** throws `ArgumentNullException` for `null`. When the pool already holds `maxSize` objects, the returned object is dropped, and disposed if it is `IDisposable`.
+- **Warm** creates up to `initialSize` objects, stopping at `maxSize`, so calling it again never grows the pool past its limit.
+- **Return each object once.** The core pools do not check for an object returned twice, which would hand the same instance to two callers. The Unity pools log an error and ignore it in the Editor and development builds.
+
 ### Using the Rental Pattern
 
 The rental pattern provides automatic return via `using` statements with zero-allocation ref structs:
@@ -100,7 +105,7 @@ Available collection pools:
 - `StackPool<T>` - Pools `Stack<T>` instances
 - `HashSetPool<T>` - Pools `HashSet<T>` instances
 - `LinkedListPool<T>` - Pools `LinkedList<T>` instances
-- `ArrayPool<T>` - Pools array instances
+- `ArrayPool<T>` - Pools array instances, one pool per length. Pass `clearOnReturn: true` to clear each array when it is returned, so an array of references does not keep its old objects alive
 
 ### Thread-Safe Pools
 
@@ -133,20 +138,19 @@ public class Zombie : Enemy { }
 public class Skeleton : Enemy { }
 public class Ghost : Enemy { }
 
-var pools = new MultiTypeObjectPoolBuilder<Enemy>()
+var multiPool = new MultiTypeObjectPool<Enemy>(builder => builder
     .AddPool(() => new Zombie(), null, null, 5, 20)
     .AddPool(() => new Skeleton(), null, null, 5, 20)
-    .AddPool(() => new Ghost(), null, null, 3, 10)
-    .Build();
+    .AddPool(() => new Ghost(), null, null, 3, 10));
 
-var multiPool = new MultiTypeObjectPool<Enemy>(pools);
-
-var zombie = multiPool.Rent<Zombie>();
-var skeleton = multiPool.Rent<Skeleton>();
+Zombie zombie = multiPool.Rent<Zombie>();
+Enemy skeleton = multiPool.Rent<Skeleton>();
 
 multiPool.Return(zombie);
 multiPool.Return(skeleton);
 ```
+
+`Rent<T>()` returns a `T`. `Return` finds the pool by the object's own type, so an object held as an `Enemy` still goes back to its `Skeleton` pool; an object of a type with no pool is ignored.
 
 ### Keyed Object Pool
 

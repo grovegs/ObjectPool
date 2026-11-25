@@ -113,6 +113,14 @@ namespace GroveGames.ObjectPool.Unity
                 return;
             }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_items.Contains(item))
+            {
+                Debug.LogError($"{item.name} was returned to the pool twice");
+                return;
+            }
+#endif
+
             var gameObject = item.gameObject;
             gameObject.SetActive(false);
 

@@ -1,6 +1,7 @@
 using System;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace GroveGames.ObjectPool.Unity.Tests
 {
@@ -135,6 +136,19 @@ namespace GroveGames.ObjectPool.Unity.Tests
             Assert.That(instance, Is.TypeOf<BoxCollider>());
 
             UnityEngine.Object.DestroyImmediate(instance.gameObject);
+        }
+
+        [Test]
+        public void Return_SameItemTwice_LogsErrorAndPoolsItOnce()
+        {
+            using var pool = new ComponentPool<BoxCollider>(_prefab, null, 0, 10);
+            var item = pool.Rent();
+            pool.Return(item);
+
+            LogAssert.Expect(LogType.Error, $"{item.name} was returned to the pool twice");
+            pool.Return(item);
+
+            Assert.That(pool.Count, Is.EqualTo(1));
         }
 
         [Test]
