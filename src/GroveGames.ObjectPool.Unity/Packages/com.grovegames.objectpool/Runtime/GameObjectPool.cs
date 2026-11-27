@@ -126,7 +126,10 @@ namespace GroveGames.ObjectPool.Unity
 
             item.SetActive(false);
 
-            RemoveDestroyed();
+            if (_items.Count >= _maxSize)
+            {
+                RemoveDestroyed();
+            }
 
             if (_items.Count >= _maxSize)
             {

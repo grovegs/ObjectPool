@@ -113,6 +113,12 @@ public sealed class ConcurrentObjectPool<T> : IConcurrentObjectPool<T> where T :
             }
 
             _items.Enqueue(item);
+
+            if (_disposed == 1)
+            {
+                DisposeItems();
+                return;
+            }
         }
     }
 

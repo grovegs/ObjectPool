@@ -825,6 +825,40 @@ public sealed class ConcurrentObjectPoolTests
         }
     }
 
+    [Fact]
+    public void Dispose_RacingWarm_DisposesEveryWarmedItem()
+    {
+        for (var round = 0; round < 500; round++)
+        {
+            // Arrange
+            var created = new System.Collections.Concurrent.ConcurrentBag<TestTrackedDisposable>();
+            var pool = new ConcurrentObjectPool<TestTrackedDisposable>(() =>
+            {
+                var item = new TestTrackedDisposable();
+                created.Add(item);
+                return item;
+            }, null, null, 64, 64);
+            var warmer = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    pool.Warm();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            });
+
+            // Act
+            warmer.Start();
+            pool.Dispose();
+            warmer.Join();
+
+            // Assert
+            Assert.All(created, item => Assert.True(item.IsDisposed));
+        }
+    }
+
     private sealed class TestTrackedDisposable : IDisposable
     {
         private bool _isDisposed;
