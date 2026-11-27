@@ -93,12 +93,13 @@ public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<T
             return;
         }
 
-        foreach (var pool in _pools.Values)
+        foreach (var key in _pools.Keys)
         {
-            pool.Dispose();
+            if (_pools.TryRemove(key, out var pool))
+            {
+                pool.Dispose();
+            }
         }
-
-        _pools.Clear();
     }
 
     private IConcurrentObjectPool<TValue> GetOrCreatePool(TKey key)
@@ -115,6 +116,11 @@ public sealed class ConcurrentKeyedObjectPool<TKey, TValue> : IKeyedObjectPool<T
         if (!ReferenceEquals(pool, created))
         {
             created.Dispose();
+        }
+
+        if (_disposed == 1 && _pools.TryRemove(key, out var removed))
+        {
+            removed.Dispose();
         }
 
         return pool;

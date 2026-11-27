@@ -695,4 +695,22 @@ public sealed class ConcurrentArrayPoolTests
         // Assert
         Assert.Equal("a", array[0]);
     }
+
+    [Fact]
+    public void RentAndReturn_AfterWarmUp_DoesNotAllocate()
+    {
+        // Arrange
+        using var pool = new ConcurrentArrayPool<int>(0, 8);
+        pool.Return(pool.Rent(32));
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        // Act
+        for (var i = 0; i < 1000; i++)
+        {
+            pool.Return(pool.Rent(32));
+        }
+
+        // Assert
+        Assert.Equal(0L, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
 }

@@ -130,6 +130,8 @@ public sealed class ConcurrentIndexedObjectPool<TValue> : IIndexedObjectPool<TVa
 
         lock (_lock)
         {
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
             var pools = _pools;
 
             if (index >= pools.Length)

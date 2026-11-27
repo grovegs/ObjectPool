@@ -18,7 +18,7 @@ A high-performance object pooling library for .NET, Unity, and Godot with Native
 - **Rental Pattern**: Ref struct-based rentals for automatic return via `using` statements
 - **Native AOT Compatible**: Fully supports ahead-of-time compilation for maximum performance
 - **Unity Integration**: GameObjectPool and ComponentPool with automatic activation management
-- **Godot Integration**: Available as a Godot addon
+- **Godot**: The core library works in Godot through NuGet; the addon only carries the agent skill
 - Test doubles for your own tests: `FakeObjectPool` and `FakePrefabPool` in the editor-only `GroveGames.ObjectPool.Unity.Testing` assembly
 
 ## .NET
@@ -451,7 +451,7 @@ public class EffectPlayer : MonoBehaviour
 - **`GameObjectPool`**: Pools GameObjects with automatic activation/deactivation
 - **`ComponentPool<T>`**: Pools Components with automatic activation/deactivation
 
-Unity pools own their instances: `Warm` creates them inactive and never beyond `maxSize`, `Return` moves an item back under the pool parent and destroys it when the pool is full, and `Clear`/`Dispose` destroy the pooled GameObjects.
+Unity pools own their instances: `Warm` creates them inactive, so their `Awake` and `OnEnable` run on the first `Rent`, and never beyond `maxSize`. Destroyed instances do not count toward `maxSize`. `Return` moves an item back under the pool parent and destroys it when the pool is full, and `Clear`/`Dispose` destroy the pooled GameObjects.
 
 - **`KeyedGameObjectPool<TKey>`**: One `GameObjectPool` per key, created on first use
 - **`KeyedComponentPool<TKey, T>`**: One `ComponentPool<T>` per key, created on first use
@@ -487,13 +487,13 @@ builder.AddIndexedComponentPool<Target>(resolver => resolver.Resolve<ITargetLoad
 
 ## Godot
 
-Install via NuGet:
+Install the core library via NuGet. There are no Godot-specific pools; use `ObjectPool<T>` and the other core pools with nodes and your own create and return callbacks.
 
 ```bash
-dotnet add package GroveGames.ObjectPool.Godot
+dotnet add package GroveGames.ObjectPool
 ```
 
-Download the Godot addon from the [latest release](https://github.com/grovegs/ObjectPool/releases/latest) and extract it to your project's `addons` folder. Enable the addon in Project Settings → Plugins.
+The addon from the [latest release](https://github.com/grovegs/ObjectPool/releases/latest) holds the agent skill. Extract it to your project's `addons` folder and enable it in Project Settings → Plugins.
 
 ```text
 res://
@@ -509,8 +509,8 @@ res://
 ### Performance Optimizations
 
 1. **Ref Struct Rentals**: Zero-allocation automatic return pattern
-2. **Frozen Dictionaries**: O(1) type lookup for multi-type pools
-3. **Queue-Based Storage**: Efficient FIFO pooling behavior
+2. **Frozen Dictionaries**: O(1) type lookup for multi-type pools (a plain `Dictionary` on netstandard2.1)
+3. **Stack-Based Storage**: `ObjectPool` and the Unity pools hand out the most recently returned item first (LIFO); `ConcurrentObjectPool` is FIFO
 4. **Native AOT**: Full compatibility with ahead-of-time compilation
 5. **No Boxing**: Generic constraints ensure no boxing allocations
 

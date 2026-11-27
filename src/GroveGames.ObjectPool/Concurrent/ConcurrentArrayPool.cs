@@ -53,7 +53,11 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
             return [];
         }
 
-        var pool = _poolsBySize.GetOrAdd(size, s => new ConcurrentObjectPool<T[]>(() => new T[s], null, null, _initialSize, _maxSize));
+        if (!_poolsBySize.TryGetValue(size, out var pool))
+        {
+            pool = AddPool(size);
+        }
+
         return pool.Rent();
     }
 
@@ -67,12 +71,25 @@ public sealed class ConcurrentArrayPool<T> : IArrayPool<T> where T : notnull
             return;
         }
 
-        if (_clearOnReturn)
+        if (_clearOnReturn && pool.Count < pool.MaxSize)
         {
             Array.Clear(array, 0, array.Length);
         }
 
         pool.Return(array);
+    }
+
+    private ConcurrentObjectPool<T[]> AddPool(int size)
+    {
+        var created = new ConcurrentObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
+        var pool = _poolsBySize.GetOrAdd(size, created);
+
+        if (!ReferenceEquals(pool, created))
+        {
+            created.Dispose();
+        }
+
+        return pool;
     }
 
     public void Clear()
