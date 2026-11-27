@@ -54,8 +54,7 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         if (!_poolsBySize.TryGetValue(size, out var pool))
         {
-            pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
-            _poolsBySize[size] = pool;
+            pool = AddPool(size);
         }
 
         return pool.Rent();
@@ -75,8 +74,7 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
 
         if (!_poolsBySize.TryGetValue(size, out var pool))
         {
-            pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
-            _poolsBySize[size] = pool;
+            pool = AddPool(size);
         }
 
         if (_clearOnReturn && pool.Count < pool.MaxSize)
@@ -85,6 +83,13 @@ public sealed class ArrayPool<T> : IArrayPool<T> where T : notnull
         }
 
         pool.Return(array);
+    }
+
+    private ObjectPool<T[]> AddPool(int size)
+    {
+        var pool = new ObjectPool<T[]>(() => new T[size], null, null, _initialSize, _maxSize);
+        _poolsBySize[size] = pool;
+        return pool;
     }
 
     public void Clear()

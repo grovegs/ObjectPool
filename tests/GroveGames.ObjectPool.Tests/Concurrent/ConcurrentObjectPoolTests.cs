@@ -749,4 +749,125 @@ public sealed class ConcurrentObjectPoolTests
             }
         }
     }
+
+    [Fact]
+    public void Return_ManyThreads_CountNeverExceedsMaxSize()
+    {
+        // Arrange
+        using var pool = new ConcurrentObjectPool<object>(() => new object(), null, null, 0, 8);
+        var exceeded = 0;
+        using var stop = new System.Threading.CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        var threads = new System.Threading.Thread[8];
+
+        // Act
+        for (var t = 0; t < threads.Length; t++)
+        {
+            threads[t] = new System.Threading.Thread(() =>
+            {
+                while (!stop.IsCancellationRequested)
+                {
+                    pool.Return(pool.Rent());
+
+                    if (pool.Count > pool.MaxSize)
+                    {
+                        System.Threading.Interlocked.Exchange(ref exceeded, 1);
+                    }
+                }
+            });
+            threads[t].Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Join();
+        }
+
+        // Assert
+        Assert.Equal(0, exceeded);
+    }
+
+    [Fact]
+    public void Dispose_RacingReturn_DisposesEveryPooledItem()
+    {
+        for (var round = 0; round < 200; round++)
+        {
+            // Arrange
+            var pool = new ConcurrentObjectPool<TestTrackedDisposable>(() => new TestTrackedDisposable(), null, null, 0, 64);
+            var items = new TestTrackedDisposable[32];
+
+            for (var i = 0; i < items.Length; i++)
+            {
+                items[i] = pool.Rent();
+            }
+
+            var returner = new System.Threading.Thread(() =>
+            {
+                foreach (var item in items)
+                {
+                    try
+                    {
+                        pool.Return(item);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        item.Dispose();
+                    }
+                }
+            });
+
+            // Act
+            returner.Start();
+            pool.Dispose();
+            returner.Join();
+
+            // Assert
+            Assert.All(items, item => Assert.True(item.IsDisposed));
+        }
+    }
+
+    [Fact]
+    public void Dispose_RacingWarm_DisposesEveryWarmedItem()
+    {
+        for (var round = 0; round < 500; round++)
+        {
+            // Arrange
+            var created = new System.Collections.Concurrent.ConcurrentBag<TestTrackedDisposable>();
+            var pool = new ConcurrentObjectPool<TestTrackedDisposable>(() =>
+            {
+                var item = new TestTrackedDisposable();
+                created.Add(item);
+                return item;
+            }, null, null, 64, 64);
+            var warmer = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    pool.Warm();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            });
+
+            // Act
+            warmer.Start();
+            pool.Dispose();
+            warmer.Join();
+
+            // Assert
+            Assert.All(created, item => Assert.True(item.IsDisposed));
+        }
+    }
+
+    private sealed class TestTrackedDisposable : IDisposable
+    {
+        private bool _isDisposed;
+
+        public bool IsDisposed => _isDisposed;
+
+        public void Dispose()
+        {
+            _isDisposed = true;
+        }
+    }
 }

@@ -10,7 +10,7 @@ namespace GroveGames.ObjectPool.Unity
         private readonly Transform _parent;
         private readonly int _initialSize;
         private readonly int _maxSize;
-        private readonly Stack<T> _items;
+        private readonly List<T> _items;
         private bool _disposed;
 
         public int Count
@@ -23,6 +23,7 @@ namespace GroveGames.ObjectPool.Unity
                     return 0;
                 }
 
+                RemoveDestroyed();
                 return _items.Count;
             }
         }
@@ -71,7 +72,7 @@ namespace GroveGames.ObjectPool.Unity
             _parent = parent;
             _initialSize = initialSize;
             _maxSize = maxSize;
-            _items = new Stack<T>(initialSize);
+            _items = new List<T>(initialSize);
             _disposed = false;
         }
 
@@ -85,7 +86,9 @@ namespace GroveGames.ObjectPool.Unity
 
             while (_items.Count > 0)
             {
-                var pooled = _items.Pop();
+                var last = _items.Count - 1;
+                var pooled = _items[last];
+                _items.RemoveAt(last);
 
                 if (pooled != null)
                 {
@@ -126,6 +129,11 @@ namespace GroveGames.ObjectPool.Unity
 
             if (_items.Count >= _maxSize)
             {
+                RemoveDestroyed();
+            }
+
+            if (_items.Count >= _maxSize)
+            {
                 DestroyObject(gameObject);
                 return;
             }
@@ -137,7 +145,7 @@ namespace GroveGames.ObjectPool.Unity
                 transform.SetParent(_parent, false);
             }
 
-            _items.Push(item);
+            _items.Add(item);
         }
 
         public void Clear()
@@ -159,12 +167,25 @@ namespace GroveGames.ObjectPool.Unity
                 return;
             }
 
+            RemoveDestroyed();
+
+            if (_initialSize == 0 || _items.Count >= _maxSize)
+            {
+                return;
+            }
+
+            var staging = new GameObject("Staging");
+            staging.SetActive(false);
+
             for (var i = 0; i < _initialSize && _items.Count < _maxSize; i++)
             {
-                var created = Create();
+                var created = Object.Instantiate(_prefab, staging.transform);
                 created.gameObject.SetActive(false);
-                _items.Push(created);
+                created.transform.SetParent(_parent, false);
+                _items.Add(created);
             }
+
+            DestroyObject(staging);
         }
 
         public void Dispose()
@@ -187,13 +208,20 @@ namespace GroveGames.ObjectPool.Unity
         {
             while (_items.Count > 0)
             {
-                var item = _items.Pop();
+                var last = _items.Count - 1;
+                var item = _items[last];
+                _items.RemoveAt(last);
 
                 if (item != null)
                 {
                     DestroyObject(item.gameObject);
                 }
             }
+        }
+
+        private void RemoveDestroyed()
+        {
+            _items.RemoveAll(static item => item == null);
         }
 
         private static void DestroyObject(GameObject gameObject)
